@@ -1,0 +1,21 @@
+Haskell Project Proposal: Fractal generation
+By: Jun Asano and Jayden Francis
+
+Overview: We have both been fascinated by the mathematical beauty of Fractals, and curious about their creation. For this project, we would like to create a Fractal generator that takes advantage of the diagrams library*, and is able to generate a variety of fractals based on user inputs like number of iterations, type of fractal (Pythagorean Trees, Koch Snowflakes, Mandelbrot Set), color specifications, and potentially more (see our goals). In order to implement this, we will have to create custom data types, geometric recursive functions, and gain a much better understanding of image generation in Haskell.
+
+
+Easy goal: Fractal generator 
+The first milestone will involve learning more about the diagrams library and the math behind the different types of fractals and their generation. Once we have an understanding of this, we will implement a function that takes in the number of iterations, type of fractal, and color parameters. It will then create an image of a fractal based on the inputs. This will be the foundation for our project. We will start with 3 types of fractals: Pythagorean Trees, Koch Snowflakes, and members of the Mandelbrot Set.
+
+Medium Goal: Complex fractals with dynamic coloring
+For our second goal, we would like to expand our basic fractal generator to include more complex parameters and inputs, including dynamic coloring instead of fixed coloring, (which could be based on pixel density or geometric factors), color shading, and more complex fractals like the Newton fractal.
+
+
+Challenge Goal: Animation
+For our stretch milestone, we would like to implement fractal animation that would be able to display fractals as they are generated (easy), or as certain parameters are shifted (harder), or as a camera is “zoomed in” to the fractal (which we imagine would be harder still). These goals will require us to change the overall logic and also to explore new libraries or go more in-depth with the libraries used in previous parts. 
+
+
+Some useful links:
+Implementing fractals: http://learn.hfm.io/fractals.html
+Diagrams library link: https://hackage.haskell.org/package/diagrams
+Very complex but cool fractal generator: https://maksmozolewski.co.uk/blog/newton-fractals-generator-in-haskell/
