@@ -20,6 +20,16 @@
   (major1) == 4 && (major2) <  16 || \
   (major1) == 4 && (major2) == 16 && (minor) <= 4)
 #endif /* MIN_VERSION_base */
+/* package colour-2.3.6 */
+#ifndef VERSION_colour
+#define VERSION_colour "2.3.6"
+#endif /* VERSION_colour */
+#ifndef MIN_VERSION_colour
+#define MIN_VERSION_colour(major1,major2,minor) (\
+  (major1) <  2 || \
+  (major1) == 2 && (major2) <  3 || \
+  (major1) == 2 && (major2) == 3 && (minor) <= 6)
+#endif /* MIN_VERSION_colour */
 /* package diagrams-contrib-1.4.5.1 */
 #ifndef VERSION_diagrams_contrib
 #define VERSION_diagrams_contrib "1.4.5.1"
