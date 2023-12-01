@@ -45,20 +45,27 @@ snowflake :: Int -> Diagram B
 snowflake n = strokeTrail $ snowflakeTrail n
 
 
-tree :: Int -> Diagram B
-tree 1 = circle 1.25
-                    # translate (r2 (0, 1/2)) # lwG 0
-tree n =
-  square 1          # translate (r2 (0, 1/2)) 
-                     # lw thin
-  `atop` triangle   # translate (r2 (0,1)) # lwG 0
-  `atop` tree (n-1) # rotate (-asin 0.8 @@ rad)
-                    # scale 0.6 # translate (r2 ( 0.32,1.24))
-  `atop` tree (n-1) # rotate ( asin 0.6 @@ rad)
-                    # scale 0.8 # translate (r2 (-0.18,1.24))
+-- Generate Heighway dragon fractal
+dragon :: (Floating n, Ord n) => Trail V2 n -> Trail V2 n
+dragon trail = (trail # rotateBy (-1/8) 
+                    <> trail # rotateBy (5/8) # reverseTrail) 
+                   # scale (1/sqrt 2)
+
+-- Generate dragon fractal diagram
+dragonCurve :: Int -> Diagram B
+dragonCurve n = strokeTrail $ iterate dragon (hrule 1) !! n
+
+
+-- Generate pythagoras tree
+pythagorasTree :: Int -> Diagram B
+pythagorasTree 0 = square 1 # translate (r2 (0, 1/2)) # lwG 0
+pythagorasTree n =
+  square 1          # translate (r2 (0, 1/2)) # lw thin
+  `atop` branch     # translate (r2 (0,1)) # lwG 0
+  `atop` pythagorasTree (n-1) # rotate (-asin 0.8 @@ rad) # scale 0.6 # translate (r2 ( 0.32,1.24))
+  `atop` pythagorasTree (n-1) # rotate ( asin 0.6 @@ rad) # scale 0.8 # translate (r2 (-0.18,1.24))
   where
-    triangle = translate (r2 (-0.5,0)) . strokeLoop . closeLine
-                 . fromVertices . map p2 $ [(0,0), (1,0), (0.8*0.8,0.8*0.6)]
+    branch = strokeLoop . fromVertices . map p2 $ [(0,0), (1,0), (0.8*0.8,0.8*0.6)]
 
 
 -- Generate the mandelbrot set as a grid, specifying color gradients, max iterations, 
@@ -87,6 +94,7 @@ mandelbrotGenerator coolC warmC maxIter edge (minX, maxX) (minY, maxY)= image # 
             where
                 normc = fromIntegral n / fromIntegral maxIter  
 
+
 -- parser that contains the command (fractal name) and arguments for each fractal
 fractal :: Parser Fractal
 fractal = hsubparser
@@ -98,12 +106,10 @@ fractal = hsubparser
 renderFractal :: Fractal -> Diagram B
 renderFractal (Snowflake n) = snowflake n
 renderFractal (Sierpinski n) = sierpinski n
-renderFractal (Tree n)       = tree n
+renderFractal (Tree n)       = pythagorasTree n
 
 main :: IO ()
 main = do
     fractalOptions <- execParser (info (fractal <**> helper) fullDesc)
     let diagram = renderFractal fractalOptions
     renderSVG "output.svg" (dims $ V2 400 400) diagram
-
-  
