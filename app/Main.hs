@@ -2,7 +2,8 @@ module Main where
 import Diagrams.Prelude hiding (image,Angle, value)
 import Diagrams.Backend.SVG.CmdLine (mainWith, B )
 import Diagrams.TwoD()
-import Data.Colour()
+import Text.Read (readMaybe)
+import Data.Colour( Colour )
 {-# LANGUAGE NoMonomorphismRestriction #-}
 {-# LANGUAGE TypeFamilies #-}
 import Options.Applicative
@@ -16,7 +17,13 @@ data Fractal
   | Sierpinski Int
   | Dragon Int
   | Tree Int
-  | Mandelbrot (Colour Double, Colour Double, Int, Int, (Double, Double), (Double, Double))
+  | Mandelbrot { coolColor :: Colour Double
+      , warmColor :: Colour Double
+      , maxIterations :: Int
+      , edgeSize :: Int
+      , xRange :: (Double, Double)
+      , yRange :: (Double, Double)
+      }
 
 
 triangleShape :: Diagram B
@@ -103,13 +110,26 @@ fractal = hsubparser
  <> command "dragon" (info (Dragon <$> option auto (long "iteration" <> short 'i' <> help "Dragon iteration depth")) (progDesc "Generate a Heighway Dragon fractal"))
  <> command "sierpinski" (info (Sierpinski <$> option auto (long "iteration" <> short 'i' <> help "Sierpinski iteration depth")) (progDesc "Generate a Sierpinski triangle"))
  <> command "tree" (info (Tree <$> option auto (long "iteration" <> short 'i' <> help "Tree iteration depth")) (progDesc "Generate a tree"))
+ <> command "mandelbrot" (info mandelbrotParser (progDesc "Generate a Mandelbrot fractal"))
   )
+  where
+    mandelbrotParser =
+      Mandelbrot
+        <$> option auto (long "cool-color" <> metavar "COLOR" <> help "Cool color for Mandelbrot")
+        <*> option auto (long "warm-color" <> metavar "COLOR" <> help "Warm color for Mandelbrot")
+        <*> option auto (long "max-iterations" <> short 'm' <> metavar "N" <> help "Max iterations for Mandelbrot")
+        <*> option auto (long "edge-size" <> short 'e' <> metavar "N" <> help "Edge size for Mandelbrot")
+        <*> option auto (long "x-range" <> metavar "(MIN, MAX)" <> help "X range for Mandelbrot")
+        <*> option auto (long "y-range" <> metavar "(MIN, MAX)" <> help "Y range for Mandelbrot")
+
 
 renderFractal :: Fractal -> Diagram B
 renderFractal (Snowflake n) = snowflake n
 renderFractal (Dragon n)     = dragonCurve n
 renderFractal (Sierpinski n) = sierpinski n
 renderFractal (Tree n)       = pythagorasTree n
+renderFractal (Mandelbrot coolC warmC maxIter edge (minX, maxX) (minY, maxY)) =
+  mandelbrotGenerator coolC warmC maxIter edge (minX, maxX) (minY, maxY)
 
 main :: IO ()
 main = do
