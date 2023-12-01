@@ -14,6 +14,7 @@ import Diagrams.Backend.SVG (renderSVG)
 data Fractal
   = Snowflake Int
   | Sierpinski Int
+  | Dragon Int
   | Tree Int
   | Mandelbrot (Colour Double, Colour Double, Int, Int, (Double, Double), (Double, Double))
 
@@ -99,12 +100,14 @@ mandelbrotGenerator coolC warmC maxIter edge (minX, maxX) (minY, maxY)= image # 
 fractal :: Parser Fractal
 fractal = hsubparser
   ( command "snowflake" (info (Snowflake <$> option auto (long "iteration" <> short 'i' <> help "Snowflake iteration depth")) (progDesc "Generate a Koch snowflake"))
+ <> command "dragon" (info (Dragon <$> option auto (long "iteration" <> short 'i' <> help "Dragon iteration depth")) (progDesc "Generate a Heighway Dragon fractal"))
  <> command "sierpinski" (info (Sierpinski <$> option auto (long "iteration" <> short 'i' <> help "Sierpinski iteration depth")) (progDesc "Generate a Sierpinski triangle"))
  <> command "tree" (info (Tree <$> option auto (long "iteration" <> short 'i' <> help "Tree iteration depth")) (progDesc "Generate a tree"))
   )
 
 renderFractal :: Fractal -> Diagram B
 renderFractal (Snowflake n) = snowflake n
+renderFractal (Dragon n)     = dragonCurve n
 renderFractal (Sierpinski n) = sierpinski n
 renderFractal (Tree n)       = pythagorasTree n
 
