@@ -1,0 +1,36 @@
+Midway progress report:
+
+
+Fractals:
+
+So far we have spent a significant amount of time diving into the documentation and 
+learning about the Diagrams library and its associated functions and syntax. We then 
+began developing fractals, starting with the Sierpinski Triangle, and continuing with 
+the Pythagorean Tree, Koch Snowflake, and Mandelbrot set (this one was adapted from 
+an online solution).
+The general structure we follow to figure out how to represent these fractals in haskell is 
+to find thier mathmatical definition (on Wikipedia or elsewhere) and then iteratively try
+to build these fractals using some recursive solution in haskell with the diagrams library.
+
+Command line interface:
+
+We want users to be able to specify the type of fractal they want to build on the command line
+using commands and the associated arguments that a fractal takes (like number of iterations). In 
+order to do this we are utilizing the options.applicative library along with a fractal parser function
+(which utilizes subparsers), and a custom Fractal datatype which specifies the required arguments.
+
+This is currently a work in progress but we want to develop this into a sophisticated interface
+that can also be used to create animations.
+
+Next Steps:
+
+Before our presentation next week we want to implement 2 big features. Firstly, we want to finalize
+our command line interface to be sophisticated and provide a range of options to users as arguments
+for rendering different fractals.
+
+The next feature we want to implement is animations. We know that animations are supported in the diagrams
+library so we will begin by attempting to utilize that structure to develop the animations (which will result 
+in a series of images), we will then find a library to convert the images into a gif which we will display to
+the user.
+
+
