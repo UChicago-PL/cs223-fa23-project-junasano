@@ -18,3 +18,13 @@ this specifies the name of the project to run, the -o flag indicates the output 
 
 You can specify other flags, I recommend checking out the following link which I have been using the get started: https://diagrams.github.io/doc/quickstart.html.
 
+
+## UPDATE ON COMMAND LINE PARSER:
+I created a basic parser for snowflake, sierpinski, and tree fractals (havent gotten to the mandelbrot one yet bc its more complicated). you can now run the program with a command like the following:
+cabal run -- cs223-fa23-project-junasano [fractalname] -i [number of iterations]
+for instance:
+cabal run -- cs223-fa23-project-junasano tree -i 6
+
+Do do this I got rid of the mainWith function and I am using Options.Applicative along with the renderSVG function from Diagrams.Backend.SVG.
+
+We now need to make this work for the mandelbrot fracal which requires more inputs and also support animation

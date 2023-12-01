@@ -1,11 +1,22 @@
 module Main where
-import Diagrams.Prelude hiding (image,Angle)
-import Diagrams.Backend.SVG.CmdLine ( mainWith, B )
-import Diagrams.TwoD
-import Data.Colour (blend)
+import Diagrams.Prelude hiding (image,Angle, value)
+import Diagrams.Backend.SVG.CmdLine (mainWith, B )
+import Diagrams.TwoD()
+import Data.Colour()
 {-# LANGUAGE NoMonomorphismRestriction #-}
 {-# LANGUAGE TypeFamilies #-}
+import Options.Applicative
 import Data.Complex ( magnitude, Complex((:+)) )
+import Diagrams.Backend.SVG (renderSVG)
+
+
+-- For parsing we create a fractal datatype which includes the args
+data Fractal
+  = Snowflake Int
+  | Sierpinski Int
+  | Tree Int
+  | Mandelbrot (Colour Double, Colour Double, Int, Int, (Double, Double), (Double, Double))
+
 
 triangleShape :: Diagram B
 triangleShape = eqTriangle 1
@@ -20,14 +31,19 @@ sierpinski n = s
 
 
 -- Generate Koch Snowflake
-kochSnowFlake :: Int -> Diagram B
-kochSnowFlake 0 = triangleShape
-kochSnowFlake n = 
-  let tri1 = eqTriangle 1 # rotateBy (1/6) -- # scale (1/3)
-  in
-    (tri1 `atop` eqTriangle 1 # translate (r2 (0,0)))-- === tri1
-    --beside (r2 (4,(1/6))) tri1 (eqTriangle 1 === tri1) # center
-  --( tri1 ||| (eqTriangle 1 === tri1) ||| tri1)  # center
+snowflakeTrail :: Int -> Trail V2 Double
+snowflakeTrail n = k <> k # rotateBy (-1/3) <> k # rotateBy (1/3)
+  where k = koch n
+
+koch :: Int -> Trail V2 Double
+koch 0 = fromOffsets [r2 (1, 0)]
+koch n = k <> k # rotateBy (1/6) <> k # rotateBy (-1/6) <> k
+  where k = koch (n-1) # scale (1/3)
+
+-- Generate Koch Snowflake diagram
+snowflake :: Int -> Diagram B
+snowflake n = strokeTrail $ snowflakeTrail n
+
 
 tree :: Int -> Diagram B
 tree 1 = circle 1.25
@@ -71,9 +87,23 @@ mandelbrotGenerator coolC warmC maxIter edge (minX, maxX) (minY, maxY)= image # 
             where
                 normc = fromIntegral n / fromIntegral maxIter  
 
+-- parser that contains the command (fractal name) and arguments for each fractal
+fractal :: Parser Fractal
+fractal = hsubparser
+  ( command "snowflake" (info (Snowflake <$> option auto (long "iteration" <> short 'i' <> help "Snowflake iteration depth")) (progDesc "Generate a Koch snowflake"))
+ <> command "sierpinski" (info (Sierpinski <$> option auto (long "iteration" <> short 'i' <> help "Sierpinski iteration depth")) (progDesc "Generate a Sierpinski triangle"))
+ <> command "tree" (info (Tree <$> option auto (long "iteration" <> short 'i' <> help "Tree iteration depth")) (progDesc "Generate a tree"))
+  )
 
--- Main function to generate the SVG file
+renderFractal :: Fractal -> Diagram B
+renderFractal (Snowflake n) = snowflake n
+renderFractal (Sierpinski n) = sierpinski n
+renderFractal (Tree n)       = tree n
+
 main :: IO ()
-main = mainWith $ tree 3
-  --mainWith $ kochSnowFlake 2
-  --mainWith (mandelbrotGenerator yellow red 100 200 (-2.0, 1.0) (-1.0, 1.0))
+main = do
+    fractalOptions <- execParser (info (fractal <**> helper) fullDesc)
+    let diagram = renderFractal fractalOptions
+    renderSVG "output.svg" (dims $ V2 400 400) diagram
+
+  
