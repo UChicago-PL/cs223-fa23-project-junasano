@@ -6,7 +6,7 @@ Fractals:
 So far we have spent a significant amount of time diving into the documentation and 
 learning about the Diagrams library and its associated functions and syntax. We then 
 began developing fractals, starting with the Sierpinski Triangle, and continuing with 
-the Pythagorean Tree, Koch Snowflake, and Mandelbrot set (this one was adapted from 
+the Pythagorean Tree, Heighway dragon fractal, Koch Snowflake, and Mandelbrot set (this one was adapted from 
 an online solution).
 The general structure we follow to figure out how to represent these fractals in haskell is 
 to find thier mathmatical definition (on Wikipedia or elsewhere) and then iteratively try
