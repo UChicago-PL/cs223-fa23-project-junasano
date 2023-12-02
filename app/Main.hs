@@ -9,6 +9,9 @@ import Data.Colour( Colour )
 import Options.Applicative
 import Data.Complex ( magnitude, Complex((:+)) )
 import Diagrams.Backend.SVG (renderSVG)
+import Diagrams.Animation()
+import System.IO ( hFlush, stdout )
+import Control.Monad
 
 
 -- For parsing we create a fractal datatype which includes the args
@@ -123,6 +126,7 @@ fractal = hsubparser
         <*> option auto (long "y-range" <> metavar "(MIN, MAX)" <> help "Y range for Mandelbrot")
 
 
+
 renderFractal :: Fractal -> Diagram B
 renderFractal (Snowflake n) = snowflake n
 renderFractal (Dragon n)     = dragonCurve n
@@ -131,8 +135,61 @@ renderFractal (Tree n)       = pythagorasTree n
 renderFractal (Mandelbrot coolC warmC maxIter edge (minX, maxX) (minY, maxY)) =
   mandelbrotGenerator coolC warmC maxIter edge (minX, maxX) (minY, maxY)
 
+
+getFractalType :: IO String 
+getFractalType = do
+  putStrLn "Choose a fractal! (type 'help' for options):"
+  hFlush stdout
+  getLine
+
+showHelp :: IO ()
+showHelp = putStrLn "Available fractals: Snowflake, Sierpinski, Dragon, Tree, Mandelbrot"
+
+promptOutputType :: IO String
+promptOutputType = do
+    putStrLn "Choose output type (still or animation):"
+    hFlush stdout
+    getLine
+  
+promptFractalArgs :: String -> IO Fractal
+promptFractalArgs fractalType = case fractalType of
+    "Snowflake" -> do
+        putStrLn "Enter iterations for Snowflake:"
+        hFlush stdout
+        iters <- readLn
+        return $ Snowflake iters
+    _ -> do
+      putStrLn "not implemented yet"
+      return $ Snowflake 3
+
+
+renderIteration :: Fractal -> IO ()
+renderIteration fractalType = do
+    let diagram = renderFractal $ fractalType
+    let fileName = "output.svg"
+    renderSVG fileName (dims $ V2 400 400) diagram
+
+promptFractalTypeLoop :: IO String
+promptFractalTypeLoop = do
+    fractalType <- getFractalType
+    if fractalType == "help" then do
+        showHelp
+        promptFractalTypeLoop
+    else 
+        return fractalType
+
 main :: IO ()
 main = do
-    fractalOptions <- execParser (info (fractal <**> helper) fullDesc)
-    let diagram = renderFractal fractalOptions
-    renderSVG "output.svg" (dims $ V2 400 400) diagram
+    fractalType <- promptFractalTypeLoop
+    outputType <- promptOutputType
+
+    case outputType of
+        "still" -> do
+            fractalChose <- promptFractalArgs fractalType
+            renderIteration fractalChose
+        "animation" -> do
+            putStrLn "Animation not yet implemented"
+        _ -> putStrLn "Invalid output type"
+
+
+
