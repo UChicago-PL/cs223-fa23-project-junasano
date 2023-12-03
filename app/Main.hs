@@ -12,14 +12,16 @@ import Diagrams.Backend.SVG (renderSVG)
 import Diagrams.Animation()
 import System.IO ( hFlush, stdout )
 import Control.Monad
+import Data.Colour.Names (readColourName)
+import Data.Maybe (fromMaybe)
 
 
 -- For parsing we create a fractal datatype which includes the args
 data Fractal
-  = Snowflake Int
-  | Sierpinski Int
-  | Dragon Int
-  | Tree Int
+  = Snowflake { minIterations :: Int, maxIterations :: Int }
+  | Sierpinski { minIterations :: Int, maxIterations :: Int }
+  | Dragon { minIterations :: Int, maxIterations :: Int }
+  | Tree { minIterations :: Int, maxIterations :: Int }
   | Mandelbrot { coolColor :: Colour Double
       , warmColor :: Colour Double
       , maxIterations :: Int
@@ -97,7 +99,7 @@ mandelbrotGenerator coolC warmC maxIter edge (minX, maxX) (minY, maxY)= image # 
         grid = [ [x :+ y | x <- sideX] | y <- sideY ]
 
         
-        image = vcat . map hcat $ map (map (toSquare . pixel)) grid
+        image = vcat $ map (hcat . map (toSquare . pixel)) grid
 
         
         toSquare :: Int -> Diagram B
@@ -106,32 +108,14 @@ mandelbrotGenerator coolC warmC maxIter edge (minX, maxX) (minY, maxY)= image # 
                 normc = fromIntegral n / fromIntegral maxIter  
 
 
--- parser that contains the command (fractal name) and arguments for each fractal
-fractal :: Parser Fractal
-fractal = hsubparser
-  ( command "snowflake" (info (Snowflake <$> option auto (long "iteration" <> short 'i' <> help "Snowflake iteration depth")) (progDesc "Generate a Koch snowflake"))
- <> command "dragon" (info (Dragon <$> option auto (long "iteration" <> short 'i' <> help "Dragon iteration depth")) (progDesc "Generate a Heighway Dragon fractal"))
- <> command "sierpinski" (info (Sierpinski <$> option auto (long "iteration" <> short 'i' <> help "Sierpinski iteration depth")) (progDesc "Generate a Sierpinski triangle"))
- <> command "tree" (info (Tree <$> option auto (long "iteration" <> short 'i' <> help "Tree iteration depth")) (progDesc "Generate a tree"))
- <> command "mandelbrot" (info mandelbrotParser (progDesc "Generate a Mandelbrot fractal"))
-  )
-  where
-    mandelbrotParser =
-      Mandelbrot
-        <$> option auto (long "cool-color" <> metavar "COLOR" <> help "Cool color for Mandelbrot")
-        <*> option auto (long "warm-color" <> metavar "COLOR" <> help "Warm color for Mandelbrot")
-        <*> option auto (long "max-iterations" <> short 'm' <> metavar "N" <> help "Max iterations for Mandelbrot")
-        <*> option auto (long "edge-size" <> short 'e' <> metavar "N" <> help "Edge size for Mandelbrot")
-        <*> option auto (long "x-range" <> metavar "(MIN, MAX)" <> help "X range for Mandelbrot")
-        <*> option auto (long "y-range" <> metavar "(MIN, MAX)" <> help "Y range for Mandelbrot")
 
 
 
 renderFractal :: Fractal -> Diagram B
-renderFractal (Snowflake n) = snowflake n
-renderFractal (Dragon n)     = dragonCurve n
-renderFractal (Sierpinski n) = sierpinski n
-renderFractal (Tree n)       = pythagorasTree n
+renderFractal (Snowflake _ maxIter) = snowflake maxIter
+renderFractal (Sierpinski _ maxIter) = sierpinski maxIter
+renderFractal (Dragon _ maxIter) = dragonCurve maxIter
+renderFractal (Tree _ maxIter) = pythagorasTree maxIter
 renderFractal (Mandelbrot coolC warmC maxIter edge (minX, maxX) (minY, maxY)) =
   mandelbrotGenerator coolC warmC maxIter edge (minX, maxX) (minY, maxY)
 
@@ -150,22 +134,102 @@ promptOutputType = do
     putStrLn "Choose output type (still or animation):"
     hFlush stdout
     getLine
-  
-promptFractalArgs :: String -> IO Fractal
-promptFractalArgs fractalType = case fractalType of
-    "Snowflake" -> do
-        putStrLn "Enter iterations for Snowflake:"
-        hFlush stdout
-        iters <- readLn
-        return $ Snowflake iters
-    _ -> do
-      putStrLn "not implemented yet"
-      return $ Snowflake 3
 
+parseColor :: String -> Colour Double
+parseColor str = fromMaybe black $ readColourName str
+  
+promptFractalArgs :: String -> String -> IO Fractal
+promptFractalArgs fractalType outputType = case fractalType of
+    "Snowflake" -> case outputType of
+        "still" -> do
+            putStrLn "Enter iterations for Snowflake:"
+            iter <- readLn
+            return $ Snowflake iter iter
+        "animation" -> do
+            putStrLn "Enter minimum iterations for Snowflake:"
+            minIter <- readLn
+            putStrLn "Enter maximum iterations for Snowflake:"
+            Snowflake minIter <$> readLn
+    "Dragon" -> case outputType of
+        "still" -> do
+            putStrLn "Enter iterations for Dragon:"
+            iter <- readLn
+            return $ Dragon iter iter
+        "animation" -> do
+            putStrLn "Enter minimum iterations for Dragon:"
+            minIter <- readLn
+            putStrLn "Enter maximum iterations for Dragon:"
+            Dragon minIter <$> readLn
+    "Sierpinski" -> case outputType of
+        "still" -> do
+            putStrLn "Enter iterations for Sierpinski:"
+            iter <- readLn
+            return $ Sierpinski iter iter
+        "animation" -> do
+            putStrLn "Enter minimum iterations for Sierpinski:"
+            minIter <- readLn
+            putStrLn "Enter maximum iterations for Sierpinski:"
+            Sierpinski minIter <$> readLn
+    "Tree" -> case outputType of
+        "still" -> do
+            putStrLn "Enter iterations for Tree:"
+            iter <- readLn
+            return $ Tree iter iter
+        "animation" -> do
+            putStrLn "Enter minimum iterations for Tree:"
+            minIter <- readLn
+            putStrLn "Enter maximum iterations for Tree:"
+            Tree minIter <$> readLn
+    "Mandelbrot" -> do
+        putStrLn "Enter max iterations (integer):"
+        maxIter <- readLn
+
+        putStrLn "Enter cool color (name):"
+        coolStr <- getLine
+        let coolC = parseColor coolStr
+
+        putStrLn "Enter warm color (name):"
+        warmStr <- getLine
+        let warmC = parseColor warmStr
+
+        putStrLn "Enter edge size (integer):"
+        edge <- readLn
+
+        putStrLn "Enter X range as (minX, maxX):"
+        xRange <- readLn :: IO (Double, Double)
+
+        putStrLn "Enter Y range as (minY, maxY):"
+        yRange <- readLn :: IO (Double, Double)
+
+        return $ Mandelbrot coolC warmC maxIter edge xRange yRange
+    
+      
+renderAnimation :: Fractal -> IO ()
+renderAnimation fractal = case fractal of
+    Snowflake minIter maxIter -> 
+        forM_ [minIter..maxIter] $ \iter -> do
+            let diagram = snowflake iter
+            let fileName = "snowflake_" ++ show iter ++ ".svg"
+            renderSVG fileName (dims $ V2 400 400) diagram
+    Sierpinski minIter maxIter -> 
+        forM_ [minIter..maxIter] $ \iter -> do
+            let diagram = sierpinski iter
+            let fileName = "sierpinski_" ++ show iter ++ ".svg"
+            renderSVG fileName (dims $ V2 400 400) diagram
+    Dragon minIter maxIter -> 
+        forM_ [minIter..maxIter] $ \iter -> do
+            let diagram = dragonCurve iter
+            let fileName = "dragon_" ++ show iter ++ ".svg"
+            renderSVG fileName (dims $ V2 400 400) diagram
+    Tree minIter maxIter -> 
+        forM_ [minIter..maxIter] $ \iter -> do
+            let diagram = pythagorasTree iter
+            let fileName = "tree_" ++ show iter ++ ".svg"
+            renderSVG fileName (dims $ V2 400 400) diagram
 
 renderIteration :: Fractal -> IO ()
 renderIteration fractalType = do
-    let diagram = renderFractal $ fractalType
+    let diagram = renderFractal fractalType
     let fileName = "output.svg"
     renderSVG fileName (dims $ V2 400 400) diagram
 
@@ -178,17 +242,16 @@ promptFractalTypeLoop = do
     else 
         return fractalType
 
+
 main :: IO ()
 main = do
     fractalType <- promptFractalTypeLoop
     outputType <- promptOutputType
 
+    fractal <- promptFractalArgs fractalType outputType
     case outputType of
-        "still" -> do
-            fractalChose <- promptFractalArgs fractalType
-            renderIteration fractalChose
-        "animation" -> do
-            putStrLn "Animation not yet implemented"
+        "still" -> renderIteration fractal
+        "animation" -> renderAnimation fractal
         _ -> putStrLn "Invalid output type"
 
 
