@@ -61,21 +61,30 @@ getFractalAnimate fractalName constructor = do
   putStrLn $ "Enter maximum iterations for " ++ (capitalize fractalName) ++ ":"
   constructor minIter <$> readLn
 
+invalidOutputType :: String -> IO Fractal
+invalidOutputType fractalType = do
+  outputType <- promptOutputType
+  promptFractalArgs fractalType outputType
+
 promptFractalArgs :: String -> String -> IO Fractal
 promptFractalArgs fractalType outputType = do
   case capitalize fractalType of
     "Snowflake" -> case outputType of
         "still" -> getFractalStill fractalType Snowflake
         "animation" -> getFractalAnimate fractalType Snowflake
+        _ -> invalidOutputType fractalType
     "Dragon" -> case outputType of
         "still" -> getFractalStill fractalType Dragon
         "animation" -> getFractalAnimate fractalType Dragon
+        _ -> invalidOutputType fractalType
     "Sierpinski" -> case outputType of
         "still" -> getFractalStill fractalType Sierpinski
-        "animation" -> getFractalAnimate fractalType Dragon
+        "animation" -> getFractalAnimate fractalType Sierpinski
+        _ -> invalidOutputType fractalType
     "Tree" -> case outputType of
         "still" -> getFractalStill fractalType Tree
-        "animation" -> getFractalAnimate fractalType Dragon
+        "animation" -> getFractalAnimate fractalType Tree
+        _ -> invalidOutputType fractalType
     "Mandelbrot" -> do
         putStrLn "Enter max iterations (integer):"
         maxIter <- readLn

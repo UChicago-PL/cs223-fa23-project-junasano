@@ -17,4 +17,4 @@ main = do
     case outputType of
         "still" -> renderIteration fractal
         "animation" -> renderAnimation fractal
-        _ -> putStrLn "Invalid output type"
+        _ -> putStrLn outputType
