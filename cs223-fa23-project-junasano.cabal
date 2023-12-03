@@ -67,7 +67,7 @@ executable cs223-fa23-project-junasano
     -- other-extensions:
 
     -- Other library packages from which modules are imported.
-    build-depends:    base ^>=4.16.4.0, diagrams-lib, diagrams-contrib, diagrams-svg, colour, optparse-applicative
+    build-depends:    base ^>=4.16.4.0, diagrams-lib, diagrams-contrib, diagrams-svg, colour, optparse-applicative, process, directory, diagrams-rasterific
 
     -- Directories containing source files.
     hs-source-dirs:   app
