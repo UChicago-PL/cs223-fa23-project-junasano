@@ -15,6 +15,7 @@ import System.IO ( hFlush, hSetBuffering, stdin, stdout, BufferMode(LineBufferin
 import Control.Monad
 import Data.Maybe (fromMaybe)
 import Data.Char (toLower)
+import Diagrams.Backend.Rasterific (Rasterific, renderRasterific)
 
 
 -- For parsing we create a fractal datatype which includes the args
@@ -32,11 +33,11 @@ data Fractal
       }
 
 
-triangleShape :: Diagram B
+triangleShape :: Diagram Rasterific
 triangleShape = eqTriangle 1
 
 -- Generate sierpinski triangles
-sierpinski :: Int -> Diagram B
+sierpinski :: Int -> Diagram Rasterific
 sierpinski 0 = triangleShape
 sierpinski n = s
              ===
@@ -55,7 +56,7 @@ koch n = k <> k # rotateBy (1/6) <> k # rotateBy (-1/6) <> k
   where k = koch (n-1) # scale (1/3)
 
 -- Generate Koch Snowflake diagram
-snowflake :: Int -> Diagram B
+snowflake :: Int -> Diagram Rasterific
 snowflake n = strokeTrail $ snowflakeTrail n
 
 
@@ -66,12 +67,12 @@ dragon trail = (trail # rotateBy (-1/8)
                    # scale (1/sqrt 2)
 
 -- Generate dragon fractal diagram
-dragonCurve :: Int -> Diagram B
+dragonCurve :: Int -> Diagram Rasterific
 dragonCurve n = strokeTrail $ iterate dragon (hrule 1) !! n
 
 
 -- Generate pythagoras tree
-pythagorasTree :: Int -> Diagram B
+pythagorasTree :: Int -> Diagram Rasterific
 pythagorasTree 0 = square 1 # translate (r2 (0, 1/2)) # lwG 0
 pythagorasTree n =
   square 1          # translate (r2 (0, 1/2)) # lw thin
@@ -84,7 +85,7 @@ pythagorasTree n =
 
 -- Generate the mandelbrot set as a grid, specifying color gradients, max iterations, 
 -- size of the edge, range of the real vals, and range of imaginary vals
-mandelbrotGenerator :: Colour Double -> Colour Double -> Int -> Int -> (Double, Double) -> (Double, Double) -> Diagram B
+mandelbrotGenerator :: Colour Double -> Colour Double -> Int -> Int -> (Double, Double) -> (Double, Double) -> Diagram Rasterific
 mandelbrotGenerator coolC warmC maxIter edge (minX, maxX) (minY, maxY)= image # bgFrame 5 white
     where
         quadratic c z = z*z + c
@@ -103,7 +104,7 @@ mandelbrotGenerator coolC warmC maxIter edge (minX, maxX) (minY, maxY)= image # 
         image = vcat $ map (hcat . map (toSquare . pixel)) grid
 
         
-        toSquare :: Int -> Diagram B
+        toSquare :: Int -> Diagram Rasterific
         toSquare n = square 1 # lwG 0.01 # fc (blend normc coolC warmC)
             where
                 normc = fromIntegral n / fromIntegral maxIter  

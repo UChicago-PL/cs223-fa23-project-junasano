@@ -16,6 +16,9 @@ import Control.Monad
 import Data.Maybe (fromMaybe)
 import Data.Char (toLower, toUpper)
 import FractalGenerators
+import System.Process (callCommand)
+import System.Directory
+import Diagrams.Backend.Rasterific (Rasterific, renderRasterific)
 
 
 getFractalType :: IO String 
@@ -37,28 +40,38 @@ showInvalidInput = do
 promptOutputType :: IO String
 promptOutputType = do
     putStr "\ESC[2J"
-    putStrLn "Choose output type (still or animation):"
-    hFlush stdout
-    getLine
+    outputTypeLoop
+  where
+    outputTypeLoop :: IO String
+    outputTypeLoop = do
+      putStrLn "Choose output type (still or animation):"
+      hFlush stdout
+      outputType <- getLine
+      if outputType `elem` ["still", "animation"]
+        then return outputType
+        else do
+          putStrLn "Invalid input. Please enter 'still' or 'animation'."
+          outputTypeLoop
+
 
 parseColor :: String -> Colour Double
-parseColor str = fromMaybe black $ readColourName str
+parseColor colorString = fromMaybe black $ readColourName colorString
 
 capitalize :: String -> String
 capitalize [] = []
-capitalize (head:tail) = toUpper head : map toLower tail
+capitalize (h:t) = toUpper h : map toLower t
 
 getFractalStill :: String -> (Int -> Int -> Fractal) -> IO Fractal
 getFractalStill fractalName constructor = do
-  putStrLn $ "Enter iterations for " ++ (capitalize fractalName) ++ ":"
+  putStrLn $ "Enter iterations for " ++ capitalize fractalName ++ ":"
   iter <- readLn
   return $ constructor iter iter
 
 getFractalAnimate :: String -> (Int -> Int -> Fractal) -> IO Fractal
 getFractalAnimate fractalName constructor = do
-  putStrLn $ "Enter minimum iterations for " ++ (capitalize fractalName) ++ ":"
+  putStrLn $ "Enter minimum iterations for " ++ capitalize fractalName ++ ":"
   minIter <- readLn
-  putStrLn $ "Enter maximum iterations for " ++ (capitalize fractalName) ++ ":"
+  putStrLn $ "Enter maximum iterations for " ++ capitalize fractalName ++ ":"
   constructor minIter <$> readLn
 
 invalidOutputType :: String -> IO Fractal
@@ -66,78 +79,86 @@ invalidOutputType fractalType = do
   outputType <- promptOutputType
   promptFractalArgs fractalType outputType
 
+getMandelbrotStill :: IO Fractal
+getMandelbrotStill = do
+  putStrLn "Enter max iterations (integer):"
+  maxIter <- readLn
+
+  putStrLn "Enter cool color (name):"
+  coolStr <- getLine
+  let coolC = parseColor coolStr
+
+  putStrLn "Enter warm color (name):"
+  warmStr <- getLine
+  let warmC = parseColor warmStr
+
+  putStrLn "Enter edge size (integer):"
+  edge <- readLn
+
+  putStrLn "Enter X range as (minX, maxX):"
+  xRange <- readLn :: IO (Double, Double)
+
+  putStrLn "Enter Y range as (minY, maxY):"
+  yRange <- readLn :: IO (Double, Double)
+
+  return $ Mandelbrot coolC warmC maxIter edge xRange yRange
+
+        
 promptFractalArgs :: String -> String -> IO Fractal
 promptFractalArgs fractalType outputType = do
   case capitalize fractalType of
-    "Snowflake" -> case outputType of
-        "still" -> getFractalStill fractalType Snowflake
-        "animation" -> getFractalAnimate fractalType Snowflake
-        _ -> invalidOutputType fractalType
-    "Dragon" -> case outputType of
-        "still" -> getFractalStill fractalType Dragon
-        "animation" -> getFractalAnimate fractalType Dragon
-        _ -> invalidOutputType fractalType
-    "Sierpinski" -> case outputType of
-        "still" -> getFractalStill fractalType Sierpinski
-        "animation" -> getFractalAnimate fractalType Sierpinski
-        _ -> invalidOutputType fractalType
-    "Tree" -> case outputType of
-        "still" -> getFractalStill fractalType Tree
-        "animation" -> getFractalAnimate fractalType Tree
-        _ -> invalidOutputType fractalType
-    "Mandelbrot" -> do
-        putStrLn "Enter max iterations (integer):"
-        maxIter <- readLn
+    "Snowflake" -> handleOutputType Snowflake
+    "Dragon" -> handleOutputType Dragon
+    "Sierpinski" -> handleOutputType Sierpinski
+    "Tree" -> handleOutputType Tree
+    "Mandelbrot" -> getMandelbrotStill
+    _ -> error "Unsupported fractal type"
+    where
+    handleOutputType constructor = case outputType of
+        "still" -> getFractalStill fractalType constructor
+        "animation" -> getFractalAnimate fractalType constructor
+        _ -> error "Invalid output type" 
 
-        putStrLn "Enter cool color (name):"
-        coolStr <- getLine
-        let coolC = parseColor coolStr
 
-        putStrLn "Enter warm color (name):"
-        warmStr <- getLine
-        let warmC = parseColor warmStr
-
-        putStrLn "Enter edge size (integer):"
-        edge <- readLn
-
-        putStrLn "Enter X range as (minX, maxX):"
-        xRange <- readLn :: IO (Double, Double)
-
-        putStrLn "Enter Y range as (minY, maxY):"
-        yRange <- readLn :: IO (Double, Double)
-
-        return $ Mandelbrot coolC warmC maxIter edge xRange yRange
+generateFrames :: (Int -> Diagram Rasterific) -> Int -> Int -> FilePath -> IO [FilePath]
+generateFrames constructor minIter maxIter tempDir = forM [minIter..maxIter] $ \iter -> do
+    let diagram = constructor iter
+    let fileName = tempDir ++ "/frame_" ++ show iter ++ ".png"
+    renderRasterific fileName (dims $ V2 400 400) diagram
+    return fileName
 
 renderAnimation :: Fractal -> IO ()
-renderAnimation fractal = case fractal of
-    Snowflake minIter maxIter -> 
-        forM_ [minIter..maxIter] $ \iter -> do
-            let diagram = snowflake iter
-            let fileName = "snowflake_" ++ show iter ++ ".svg"
-            renderSVG fileName (dims $ V2 400 400) diagram
-    Sierpinski minIter maxIter -> 
-        forM_ [minIter..maxIter] $ \iter -> do
-            let diagram = sierpinski iter
-            let fileName = "sierpinski_" ++ show iter ++ ".svg"
-            renderSVG fileName (dims $ V2 400 400) diagram
-    Dragon minIter maxIter -> 
-        forM_ [minIter..maxIter] $ \iter -> do
-            let diagram = dragonCurve iter
-            let fileName = "dragon_" ++ show iter ++ ".svg"
-            renderSVG fileName (dims $ V2 400 400) diagram
-    Tree minIter maxIter -> 
-        forM_ [minIter..maxIter] $ \iter -> do
-            let diagram = pythagorasTree iter
-            let fileName = "tree_" ++ show iter ++ ".svg"
-            renderSVG fileName (dims $ V2 400 400) diagram
+renderAnimation fractal = do
+    let tempDir = "temp_frames"
+    createDirectoryIfMissing True tempDir
 
-renderIteration :: Fractal -> IO ()
-renderIteration fractalType = do
+    fileNames <- case fractal of
+        Snowflake minIter maxIter -> generateFrames snowflake minIter maxIter tempDir
+        Sierpinski minIter maxIter -> generateFrames sierpinski minIter maxIter tempDir
+        Dragon minIter maxIter -> generateFrames dragonCurve minIter maxIter tempDir
+        Tree minIter maxIter -> generateFrames pythagorasTree minIter maxIter tempDir
+        _ -> error "Unsupported fractal for animation"
+
+    createGif fileNames
+    cleanupFiles fileNames
+    removeDirectoryRecursive tempDir
+
+createGif :: [FilePath] -> IO ()
+createGif fileNames = do
+    let command = "convert -delay 20 -loop 0 " ++ unwords fileNames ++ " animation.gif"
+    callCommand command
+    cleanupFiles fileNames
+
+cleanupFiles :: [FilePath] -> IO ()
+cleanupFiles = mapM_ removeFile
+
+renderStill :: Fractal -> IO ()
+renderStill fractalType = do
     let diagram = renderFractal fractalType
     let fileName = "output.svg"
-    renderSVG fileName (dims $ V2 400 400) diagram
+    renderRasterific fileName (dims $ V2 400 400) diagram
 
-renderFractal :: Fractal -> Diagram B
+renderFractal :: Fractal -> Diagram Rasterific
 renderFractal (Snowflake _ maxIter) = snowflake maxIter
 renderFractal (Sierpinski _ maxIter) = sierpinski maxIter
 renderFractal (Dragon _ maxIter) = dragonCurve maxIter

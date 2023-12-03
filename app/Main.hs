@@ -15,6 +15,6 @@ main = do
 
     fractal <- promptFractalArgs fractalType outputType
     case outputType of
-        "still" -> renderIteration fractal
+        "still" -> renderStill fractal
         "animation" -> renderAnimation fractal
         _ -> putStrLn outputType
