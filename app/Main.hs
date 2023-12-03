@@ -245,6 +245,8 @@ promptFractalTypeLoop = do
 
 main :: IO ()
 main = do
+    putStr "\ESC[2J"
+    hFlush stdout
     fractalType <- promptFractalTypeLoop
     outputType <- promptOutputType
 
@@ -253,6 +255,3 @@ main = do
         "still" -> renderIteration fractal
         "animation" -> renderAnimation fractal
         _ -> putStrLn "Invalid output type"
-
-
-
