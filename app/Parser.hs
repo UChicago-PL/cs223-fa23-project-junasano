@@ -155,7 +155,7 @@ cleanupFiles = mapM_ removeFile
 renderStill :: Fractal -> IO ()
 renderStill fractalType = do
     let diagram = renderFractal fractalType
-    let fileName = "output.svg"
+    let fileName = "output.png"
     renderRasterific fileName (dims $ V2 400 400) diagram
 
 renderFractal :: Fractal -> Diagram Rasterific
