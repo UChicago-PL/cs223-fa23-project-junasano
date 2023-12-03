@@ -145,7 +145,7 @@ renderAnimation fractal = do
 
 createGif :: [FilePath] -> IO ()
 createGif fileNames = do
-    let command = "convert -delay 20 -loop 0 " ++ unwords fileNames ++ " animation.gif"
+    let command = "convert -delay 40 -set dispose background -loop 0 " ++ unwords fileNames ++ " animation.gif"
     callCommand command
     cleanupFiles fileNames
 
