@@ -20,10 +20,10 @@ import Diagrams.Backend.Rasterific (Rasterific, renderRasterific)
 
 -- For parsing we create a fractal datatype which includes the args
 data Fractal
-  = Snowflake { minIterations :: Int, maxIterations :: Int }
-  | Sierpinski { minIterations :: Int, maxIterations :: Int }
-  | Dragon { minIterations :: Int, maxIterations :: Int }
-  | Tree { minIterations :: Int, maxIterations :: Int }
+  = Snowflake { minIterations :: Int, maxIterations :: Int, color :: Colour Double }
+  | Sierpinski { minIterations :: Int, maxIterations :: Int, color :: Colour Double }
+  | Dragon { minIterations :: Int, maxIterations :: Int, color :: Colour Double }
+  | Tree { minIterations :: Int, maxIterations :: Int, color :: Colour Double }
   | Mandelbrot { coolColor :: Colour Double
       , warmColor :: Colour Double
       , maxIterations :: Int
@@ -37,48 +37,48 @@ triangleShape :: Diagram Rasterific
 triangleShape = eqTriangle 1
 
 -- Generate sierpinski triangles
-sierpinski :: Int -> Diagram Rasterific
-sierpinski 0 = triangleShape
-sierpinski n = s
+sierpinski :: Int -> Colour Double -> Diagram Rasterific
+sierpinski 0 c = triangleShape # fc c
+sierpinski n c = s
              ===
              (s ||| s)  # centerX
-  where s = sierpinski (n-1) # scale (1/2)
+  where s = sierpinski (n-1) # scale (1/2) # fc c
 
 
 -- Generate Koch Snowflake
-snowflakeTrail :: Int -> Trail V2 Double
-snowflakeTrail n = k <> k # rotateBy (-1/3) <> k # rotateBy (1/3)
-  where k = koch n
+snowflakeTrail :: Int -> Colour Double -> Trail V2 Double
+snowflakeTrail n c = k <> k # rotateBy (-1/3) <> k # rotateBy (1/3)
+  where k = koch n c
 
-koch :: Int -> Trail V2 Double
-koch 0 = fromOffsets [r2 (1, 0)]
-koch n = k <> k # rotateBy (1/6) <> k # rotateBy (-1/6) <> k
-  where k = koch (n-1) # scale (1/3)
+koch :: Int -> Colour Double -> Trail V2 Double
+koch 0 c = fromOffsets [r2 (1, 0)]
+koch n c = k <> k # rotateBy (1/6) <> k # rotateBy (-1/6) <> k 
+  where k = koch (n-1) # scale (1/3) # fc c
 
 -- Generate Koch Snowflake diagram
-snowflake :: Int -> Diagram Rasterific
-snowflake n = strokeTrail $ snowflakeTrail n
+snowflake :: Int -> Colour Double -> Diagram Rasterific
+snowflake n c = strokeTrail $ snowflakeTrail n c
 
 
 -- Generate Heighway dragon fractal
-dragon :: (Floating n, Ord n) => Trail V2 n -> Trail V2 n
-dragon trail = (trail # rotateBy (-1/8) 
+dragon :: (Floating n, Ord n) => Trail V2 n -> Colour Double -> Trail V2 n
+dragon trail c = (trail # rotateBy (-1/8)
                     <> trail # rotateBy (5/8) # reverseTrail) 
-                   # scale (1/sqrt 2)
+                   # scale (1/sqrt 2) # fc c
 
 -- Generate dragon fractal diagram
-dragonCurve :: Int -> Diagram Rasterific
-dragonCurve n = strokeTrail $ iterate dragon (hrule 1) !! n
+dragonCurve :: Int -> Colour Double -> Diagram Rasterific
+dragonCurve n c = strokeTrail $ iterate (dragon (hrule 1) c) !! n
 
 
 -- Generate pythagoras tree
-pythagorasTree :: Int -> Diagram Rasterific
-pythagorasTree 0 = square 1 # translate (r2 (0, 1/2)) # lwG 0
-pythagorasTree n =
-  square 1          # translate (r2 (0, 1/2)) # lw thin
-  `atop` branch     # translate (r2 (0,1)) # lwG 0
-  `atop` pythagorasTree (n-1) # rotate (-asin 0.8 @@ rad) # scale 0.6 # translate (r2 ( 0.32,1.24))
-  `atop` pythagorasTree (n-1) # rotate ( asin 0.6 @@ rad) # scale 0.8 # translate (r2 (-0.18,1.24))
+pythagorasTree :: Int -> Colour Double -> Diagram Rasterific
+pythagorasTree 0 c = square 1 # translate (r2 (0, 1 / 2)) # lwG 0 # fc c
+pythagorasTree n c =
+  square 1          # translate (r2 (0, 1/2)) # lw thin # fc c
+  `atop` branch     # translate (r2 (0,1)) # lwG 0 # fc c
+  `atop` pythagorasTree (n-1) # rotate (-asin 0.8 @@ rad) # scale 0.6 # translate (r2 ( 0.32,1.24)) # fc c
+  `atop` pythagorasTree (n-1) # rotate ( asin 0.6 @@ rad) # scale 0.8 # translate (r2 (-0.18,1.24)) # fc c
   where
     branch = strokeLoop . fromVertices . map p2 $ [(0,0), (1,0), (0.8*0.8,0.8*0.6)]
 

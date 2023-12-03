@@ -61,18 +61,22 @@ capitalize :: String -> String
 capitalize [] = []
 capitalize (h:t) = toUpper h : map toLower t
 
-getFractalStill :: String -> (Int -> Int -> Fractal) -> IO Fractal
+getFractalStill :: String -> (Int -> Int -> Colour Double -> Fractal) -> IO Fractal
 getFractalStill fractalName constructor = do
   putStrLn $ "Enter iterations for " ++ capitalize fractalName ++ ":"
   iter <- readLn
-  return $ constructor iter iter
+  putStrLn $ "Enter color (name) for " ++ capitalize fractalName ++ ":"
+  col <- readLn
+  return $ constructor iter iter col
 
-getFractalAnimate :: String -> (Int -> Int -> Fractal) -> IO Fractal
+getFractalAnimate :: String -> (Int -> Int -> Colour Double -> Fractal) -> IO Fractal
 getFractalAnimate fractalName constructor = do
   putStrLn $ "Enter minimum iterations for " ++ capitalize fractalName ++ ":"
   minIter <- readLn
   putStrLn $ "Enter maximum iterations for " ++ capitalize fractalName ++ ":"
-  constructor minIter <$> readLn
+  maxIter <- readLn
+  putStrLn $ "Enter color (name) for " ++ capitalize fractalName ++ ":"
+  constructor minIter <$> pure maxIter <*> readLn
 
 invalidOutputType :: String -> IO Fractal
 invalidOutputType fractalType = do
@@ -120,9 +124,9 @@ promptFractalArgs fractalType outputType = do
         _ -> error "Invalid output type" 
 
 
-generateFrames :: (Int -> Diagram Rasterific) -> Int -> Int -> FilePath -> IO [FilePath]
-generateFrames constructor minIter maxIter tempDir = forM [minIter..maxIter] $ \iter -> do
-    let diagram = constructor iter
+generateFrames :: (Int -> Colour Double -> Diagram Rasterific) -> Int -> Int -> Colour Double -> FilePath -> IO [FilePath]
+generateFrames constructor minIter maxIter tempDir c = forM [minIter..maxIter] $ \iter -> do
+    let diagram = constructor iter c
     let fileName = tempDir ++ "/frame_" ++ show iter ++ ".png"
     renderRasterific fileName (dims $ V2 400 400) diagram
     return fileName
@@ -133,10 +137,10 @@ renderAnimation fractal = do
     createDirectoryIfMissing True tempDir
 
     fileNames <- case fractal of
-        Snowflake minIter maxIter -> generateFrames snowflake minIter maxIter tempDir
-        Sierpinski minIter maxIter -> generateFrames sierpinski minIter maxIter tempDir
-        Dragon minIter maxIter -> generateFrames dragonCurve minIter maxIter tempDir
-        Tree minIter maxIter -> generateFrames pythagorasTree minIter maxIter tempDir
+        Snowflake minIter maxIter c -> generateFrames snowflake minIter maxIter c tempDir
+        Sierpinski minIter maxIter c -> generateFrames sierpinski minIter maxIter c tempDir
+        Dragon minIter maxIter c -> generateFrames dragonCurve minIter maxIter c tempDir
+        Tree minIter maxIter c -> generateFrames pythagorasTree minIter maxIter c tempDir
         _ -> error "Unsupported fractal for animation"
 
     createGif fileNames
@@ -159,10 +163,10 @@ renderStill fractalType = do
     renderRasterific fileName (dims $ V2 400 400) diagram
 
 renderFractal :: Fractal -> Diagram Rasterific
-renderFractal (Snowflake _ maxIter) = snowflake maxIter
-renderFractal (Sierpinski _ maxIter) = sierpinski maxIter
-renderFractal (Dragon _ maxIter) = dragonCurve maxIter
-renderFractal (Tree _ maxIter) = pythagorasTree maxIter
+renderFractal (Snowflake _ maxIter colour) = snowflake maxIter colour
+renderFractal (Sierpinski _ maxIter colour) = sierpinski maxIter colour
+renderFractal (Dragon _ maxIter colour) = dragonCurve maxIter colour
+renderFractal (Tree _ maxIter colour) = pythagorasTree maxIter colour
 renderFractal (Mandelbrot coolC warmC maxIter edge (minX, maxX) (minY, maxY)) =
   mandelbrotGenerator coolC warmC maxIter edge (minX, maxX) (minY, maxY)
 
