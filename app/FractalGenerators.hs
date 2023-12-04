@@ -46,22 +46,23 @@ koch 0 = fromOffsets [r2 (1, 0)]
 koch n = k <> k # rotateBy (1/6) <> k # rotateBy (-1/6) <> k 
   where k = koch (n-1) # scale (1/3)
 
--- Generate Koch Snowflake diagram
+-- Generate Koch Snowflake fractal
 snowflake :: Int -> Colour Double -> Diagram Rasterific
 snowflake n c = strokeTrail (snowflakeTrail n) # lc c
 
 
--- Generate Heighway dragon fractal
+-- Generate Heighway dragon curve
 dragon :: (Floating n, Ord n) => Trail V2 n -> Trail V2 n
 dragon trail = (trail # rotateBy (-1/8)
                     <> trail # rotateBy (5/8) # reverseTrail) 
                    # scale (1/sqrt 2)
 
--- Generate dragon fractal diagram
+-- Convert Heighway dragon curve to diagram type
 dragonCurve :: Int -> Colour Double -> Diagram Rasterific
 dragonCurve n c = strokeTrail (iterate dragon (hrule 1) !! n) # lc c
 
--- Generate pythagoras tree
+
+-- Generate Pythagoras tree
 pythagorasTree :: Int -> Colour Double -> Diagram Rasterific
 pythagorasTree 0 c = square 1 # translate (r2 (0, 1 / 2)) # lwG 0 # fc c
 pythagorasTree n c =
@@ -85,14 +86,11 @@ mandelbrotGenerator coolC warmC maxIter edge (minX, maxX) (minY, maxY)= image # 
             let sv = (v1 - v0) / fromIntegral n
             in  [v0, (v0 + sv) .. v1]
 
-        
         sideX = side edge minX maxX
         sideY = side edge minY maxY
         grid = [ [x :+ y | x <- sideX] | y <- sideY ]
 
-        
         image = vcat $ map (hcat . map (toSquare . pixel)) grid
-
         
         toSquare :: Int -> Diagram Rasterific
         toSquare n = square 1 # lwG 0.01 # fc (blend normc coolC warmC)
