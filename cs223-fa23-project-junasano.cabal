@@ -53,9 +53,9 @@ extra-doc-files:    CHANGELOG.md
 common warnings
     ghc-options: -Wall
 
-executable cs223-fa23-project-junasano
+executable fractal-generator
     -- Import common warning flags.
-    import:           warnings
+    import:           warnings 
 
     -- .hs or .lhs file containing the Main module.
     main-is:          Main.hs

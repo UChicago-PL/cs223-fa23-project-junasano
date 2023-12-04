@@ -1,6 +1,6 @@
 module Parser where
 
-import Diagrams.Prelude hiding ( image,Angle, value, frame )
+import Diagrams.Prelude hiding ( image,Angle, value, frame, index )
 import Diagrams.TwoD()
 {-# LANGUAGE NoMonomorphismRestriction #-} 
 {-# LANGUAGE TypeFamilies #-}
