@@ -13,6 +13,7 @@ import System.Process ( callCommand )
 import System.Directory
 import Diagrams.Backend.Rasterific (Rasterific, renderRasterific)
 import FractalGenerators
+import Data.String (String)
 
 
 type ZoomRange = ((Double, Double), (Double, Double))
@@ -20,7 +21,8 @@ type ZoomRange = ((Double, Double), (Double, Double))
 -- function to prompt user for fractal type
 getFractalType :: IO String 
 getFractalType = do
-  putStrLn "Choose a fractal! (type 'help' for options):"
+  putStr "Choose a fractal! (type 'help' for options):"
+  enterString
   hFlush stdout
   getLine
 
@@ -44,7 +46,8 @@ promptOutputType = do
   where
     outputTypeLoop :: IO String
     outputTypeLoop = do
-      putStrLn "Choose output type (still or animation):"
+      putStr "Choose output type (still or animation):"
+      enterString
       hFlush stdout
       outputType <- getLine
       if capitalize outputType `elem` ["Still", "Animation"]
@@ -72,6 +75,9 @@ promptFractalTypeLoop = do
 parseColor :: String -> Colour Double
 parseColor colorString = fromMaybe black $ readColourName colorString
 
+enterString :: IO ()
+enterString = putStr "\n> "
+
 -- capitalize first letter of string
 capitalize :: String -> String
 capitalize [] = []
@@ -85,98 +91,82 @@ digit s = all isDigit s
 letter :: String -> Bool
 letter s = all isLetter s
 
+promptWithDefault :: Read a => String -> a -> IO a
+promptWithDefault message defaultValue = do
+    putStr (message ++ "\n> ")
+    hFlush stdout
+    input <- getLine
+    case reads input of
+        [(value, "")] -> return value 
+        _ -> return defaultValue
+       
+promptWithDefaultString :: String -> String -> IO String
+promptWithDefaultString message defaultValue = do
+    putStr (message ++ "\n> ")
+    hFlush stdout
+    input <- getLine
+    return $ if null input then defaultValue else input
+
+
 -- function to prompt user for still fractal (except for mandelbrot) arguments
 getFractalStill :: String -> (Int -> Int -> Colour Double -> Fractal) -> IO (Fractal, Colour Double)
 getFractalStill fractalName constructor = do
-  putStrLn $ "Enter iterations for " ++ capitalize fractalName ++ ":"
-  iter <- getLine
-  putStrLn $ "Enter color (name) for " ++ capitalize fractalName ++ ":"
-  colorName <- getLine
-  putStrLn $ "Enter background color (name) for " ++ capitalize fractalName ++ ":"
-  bgColorName <- getLine
-  if digit iter && letter colorName && letter bgColorName then do
-    let col = parseColor colorName
-    let bgColor = parseColor bgColorName
-    return (constructor (read iter :: Int) (read iter :: Int) col, bgColor)
-  else do 
-    showInvalidInput
-    getFractalStill fractalName constructor
+  iter <- promptWithDefault ("Enter iterations for " ++ capitalize fractalName ++ " (default: 5)") (5 :: Int)
+  colorName <- promptWithDefaultString ("Enter color (name) for " ++ capitalize fractalName ++ " (default: blue)") "blue"
+  bgColorName <- promptWithDefaultString ("Enter background color (name) for " ++ capitalize fractalName ++ " (default: red)") "red"
+  let col = parseColor colorName
+  let bgColor = parseColor bgColorName
+  return (constructor iter iter col, bgColor)
 
 -- function to prompt user for animation fractal (except for mandelbrot) arguments  
 getFractalAnimate :: String -> (Int -> Int -> Colour Double -> Fractal) -> IO (Fractal, Colour Double)
 getFractalAnimate fractalName constructor = do
-  putStrLn $ "Enter minimum iterations for " ++ capitalize fractalName ++ ":"
-  minIter <- getLine
-  putStrLn $ "Enter maximum iterations for " ++ capitalize fractalName ++ ":"
-  maxIter <- getLine
-  putStrLn $ "Enter color (name) for " ++ capitalize fractalName ++ ":"
-  colorName <- getLine
-  putStrLn $ "Enter background color (name) for " ++ capitalize fractalName ++ ":"
-  bgColorName <- getLine
-  if digit minIter && digit maxIter && letter colorName && letter bgColorName then do
-    let col = parseColor colorName
-    let bgColor = parseColor bgColorName
-    return (constructor (read minIter :: Int) (read maxIter :: Int) col, bgColor)
-  else do 
-    showInvalidInput
-    getFractalAnimate fractalName constructor
+  minIter <- promptWithDefault ("Enter iterations for " ++ capitalize fractalName ++ " (default: 1)") (1 :: Int)
+  maxIter <- promptWithDefault ("Enter iterations for " ++ capitalize fractalName ++ " (default: 6)") (6 :: Int)
+  colorName <- promptWithDefaultString ("Enter color (name) for " ++ capitalize fractalName ++ " (default: blue)") "blue"
+  bgColorName <- promptWithDefaultString ("Enter background color (name) for " ++ capitalize fractalName ++ " (default: red)") "red"
+  
+  let col = parseColor colorName
+  let bgColor = parseColor bgColorName
+  return (constructor minIter maxIter col, bgColor)
+  
 
 -- function to prompt user for still mandelbrot arguments
 getMandelbrotStill :: IO (Fractal, Colour Double)
 getMandelbrotStill = do
-  putStrLn "Enter max iterations (integer):"
-  maxIter <- getLine
-  putStrLn "Enter cool color (name):"
-  coolStr <- getLine
-  putStrLn "Enter warm color (name):"
-  warmStr <- getLine
-  putStrLn "Enter edge size (integer):"
-  edge <- getLine
-  putStrLn "Enter X range as (minX, maxX):"
-  xRange <- readLn :: IO (Double, Double)
-  putStrLn "Enter Y range as (minY, maxY):"
-  yRange <- readLn :: IO (Double, Double)
-  if digit maxIter && digit edge && letter coolStr && letter warmStr then do
-    let warmC = parseColor warmStr
-    let coolC = parseColor coolStr
-    return (Mandelbrot coolC warmC (read maxIter :: Int) (read edge :: Int) xRange yRange, white)
-  else do 
-    showInvalidInput
-    getMandelbrotStill
+  maxIter <- promptWithDefault "Enter number of iterations (int) (default: 100)" (100 :: Int)
+  coolStr <- promptWithDefaultString "Enter cool color (name) (default: blue)" "blue"
+  warmStr <- promptWithDefaultString "Enter warm color (name) (default: red)" "red"
+  edge <- promptWithDefault "Enter number of pixels per edge (int) (default: 100)" (100 :: Int)
+  xRange <- promptWithDefault "Enter X range as (minX, maxX) (default: (-2, 1))" (-2 :: Double, 1 :: Double)
+  yRange <- promptWithDefault "Enter y range as (minY, maxY) (default: (-1.5, 1.5))" (-1.5 :: Double, 1.5 :: Double)
+  
+  let warmC = parseColor warmStr
+  let coolC = parseColor coolStr
+  return (Mandelbrot coolC warmC maxIter edge xRange yRange, white)
+  
 
 -- function to prompt user for animation mandelbrot arguments
 getMandelbrotZoom :: IO ([Fractal], Colour Double)
 getMandelbrotZoom = do
-  putStrLn "Enter max iterations (integer):"
-  maxIter <- getLine
-  putStrLn "Enter cool color (name):"
-  coolStr <- getLine
-  putStrLn "Enter warm color (name):"
-  warmStr <- getLine
-  putStrLn "Enter edge size (integer):"
-  edge <- getLine
-  putStrLn "Enter start X range as (minX, maxX):"
-  startXRange <- readLn :: IO (Double, Double)
-  putStrLn "Enter end X range as (minX, maxX):"
-  endXRange <- readLn :: IO (Double, Double)
-  putStrLn "Enter start Y range as (minY, maxY):"
-  startYRange <- readLn :: IO (Double, Double)
-  putStrLn "Enter end Y range as (minY, maxY):"
-  endYRange <- readLn :: IO (Double, Double)
-  putStrLn "Enter number of frames for animation:"
-  numFrames <- getLine
+  maxIter <- promptWithDefault "Enter start number of iterations (int) (default: 100)" (100 :: Int)
+  coolStr <- promptWithDefaultString "Enter cool color (name) (default: blue)" "blue"
+  warmStr <- promptWithDefaultString "Enter warm color (name) (default: red)" "red"
+  edge <- promptWithDefault "Enter number of pixels per edge (int) (default: 100)" (100 :: Int)
+  startXRange <- promptWithDefault "Enter start X range as (minX, maxX) (default: (-2, 1))" (-2 :: Double, 1 :: Double)
+  endXRange <- promptWithDefault "Enter end X range as (minX, maxX) (default: (-0.751, -0.749))" (-0.751 :: Double, -0.749 :: Double)
+  startYRange <- promptWithDefault "Enter start y range as (minY, maxY) (default: (-1.5, 1.5))" (-1.5 :: Double, 1.5 :: Double)
+  endYRange <- promptWithDefault "Enter end y range as (minY, maxY) (default: (0.099, 0.101))" (0.099 :: Double, 0.101 :: Double)
+  numFrames <- promptWithDefault "Enter total number of frames (default 10)" (10 :: Int)
 
-  if digit maxIter && digit edge && letter coolStr && letter warmStr && digit numFrames then do
-    let coolC = parseColor coolStr
-    let warmC = parseColor warmStr
-    let xRanges = interpolate (read numFrames :: Int) startXRange endXRange
-    let yRanges = interpolate (read numFrames :: Int) startYRange endYRange
-    let fractals = [Mandelbrot coolC warmC (read maxIter :: Int) (read edge :: Int) x y | 
-                    ((x, y), i) <- zip (zip xRanges yRanges) [0..]]
-    return (fractals, white)
-  else do 
-    showInvalidInput
-    getMandelbrotZoom 
+
+  let coolC = parseColor coolStr
+  let warmC = parseColor warmStr
+  let xRanges = interpolate numFrames startXRange endXRange
+  let yRanges = interpolate numFrames startYRange endYRange
+  let fractals = [Mandelbrot coolC warmC (maxIter + 50 * i) edge x y | 
+                  ((x, y), i) <- zip (zip xRanges yRanges) [0..]]
+  return (fractals, white) 
 
 -- function to interpolate between two ranges
 interpolate :: Int -> (Double, Double) -> (Double, Double) -> [(Double, Double)]
@@ -242,9 +232,8 @@ renderMandelbrotAnimation bgC fractals = do
     fileNames <- generateMandelbrotFrames bgC fractals tempDir
     createGif fileNames
     cleanupFiles fileNames
-    removeDirectoryRecursive tempDir
 
--- converts png files into one gif
+-- converts png files into one gif using the ImageMagick command, "convert"
 createGif :: [FilePath] -> IO ()
 createGif fileNames = do
     let command = "convert -delay 40 -set dispose background -loop 0 " ++ unwords fileNames ++ " animation.gif"
@@ -253,7 +242,10 @@ createGif fileNames = do
 
 -- for removing temp png files that are created when making animation
 cleanupFiles :: [FilePath] -> IO ()
-cleanupFiles = mapM_ removeFile
+cleanupFiles fileNames = forM_ fileNames $ \fileName -> do
+    fileExists <- doesFileExist fileName
+    when fileExists $ removeFile fileName
+
 
 -- function to create still 
 renderStill :: Colour Double -> Fractal -> IO ()
