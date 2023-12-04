@@ -72,8 +72,8 @@ promptFractalTypeLoop = do
         promptFractalTypeLoop
 
 -- converts color name to color double
-parseColor :: String -> Colour Double
-parseColor colorString = fromMaybe black $ readColourName colorString
+parseColor :: String -> Colour Double -> Colour Double
+parseColor colorString defaultColor = fromMaybe defaultColor $ readColourName colorString
 
 enterString :: IO ()
 enterString = putStr "\n> "
@@ -105,7 +105,11 @@ promptWithDefaultString message defaultValue = do
     putStr (message ++ "\n> ")
     hFlush stdout
     input <- getLine
-    return $ if null input then defaultValue else input
+    if letter input then return input else return defaultValue
+    --case reads input of
+    --    [(value, "")] -> return value
+    --    _ -> return defaultValue
+    --return $ if null input then defaultValue else input
 
 
 -- function to prompt user for still fractal (except for mandelbrot) arguments
@@ -114,20 +118,21 @@ getFractalStill fractalName constructor = do
   iter <- promptWithDefault ("Enter iterations for " ++ capitalize fractalName ++ " (default: 5)") (5 :: Int)
   colorName <- promptWithDefaultString ("Enter color (name) for " ++ capitalize fractalName ++ " (default: blue)") "blue"
   bgColorName <- promptWithDefaultString ("Enter background color (name) for " ++ capitalize fractalName ++ " (default: red)") "red"
-  let col = parseColor colorName
-  let bgColor = parseColor bgColorName
+
+  let col = parseColor colorName blue
+  let bgColor = parseColor bgColorName red
   return (constructor iter iter col, bgColor)
 
 -- function to prompt user for animation fractal (except for mandelbrot) arguments  
 getFractalAnimate :: String -> (Int -> Int -> Colour Double -> Fractal) -> IO (Fractal, Colour Double)
 getFractalAnimate fractalName constructor = do
-  minIter <- promptWithDefault ("Enter iterations for " ++ capitalize fractalName ++ " (default: 1)") (1 :: Int)
-  maxIter <- promptWithDefault ("Enter iterations for " ++ capitalize fractalName ++ " (default: 6)") (6 :: Int)
+  minIter <- promptWithDefault ("Enter start iteration for " ++ capitalize fractalName ++ " (default: 1)") (1 :: Int)
+  maxIter <- promptWithDefault ("Enter end iteration for " ++ capitalize fractalName ++ " (default: 6)") (6 :: Int)
   colorName <- promptWithDefaultString ("Enter color (name) for " ++ capitalize fractalName ++ " (default: blue)") "blue"
   bgColorName <- promptWithDefaultString ("Enter background color (name) for " ++ capitalize fractalName ++ " (default: red)") "red"
-  
-  let col = parseColor colorName
-  let bgColor = parseColor bgColorName
+
+  let col = parseColor colorName blue
+  let bgColor = parseColor bgColorName red
   return (constructor minIter maxIter col, bgColor)
   
 
@@ -141,8 +146,8 @@ getMandelbrotStill = do
   xRange <- promptWithDefault "Enter X range as (minX, maxX) (default: (-2, 1))" (-2 :: Double, 1 :: Double)
   yRange <- promptWithDefault "Enter y range as (minY, maxY) (default: (-1.5, 1.5))" (-1.5 :: Double, 1.5 :: Double)
   
-  let warmC = parseColor warmStr
-  let coolC = parseColor coolStr
+  let warmC = parseColor warmStr blue
+  let coolC = parseColor coolStr red
   return (Mandelbrot coolC warmC maxIter edge xRange yRange, white)
   
 
@@ -159,9 +164,8 @@ getMandelbrotZoom = do
   endYRange <- promptWithDefault "Enter end y range as (minY, maxY) (default: (0.099, 0.101))" (0.099 :: Double, 0.101 :: Double)
   numFrames <- promptWithDefault "Enter total number of frames (default 10)" (10 :: Int)
 
-
-  let coolC = parseColor coolStr
-  let warmC = parseColor warmStr
+  let coolC = parseColor coolStr blue
+  let warmC = parseColor warmStr red
   let xRanges = interpolate numFrames startXRange endXRange
   let yRanges = interpolate numFrames startYRange endYRange
   let fractals = [Mandelbrot coolC warmC (maxIter + 50 * i) edge x y | 
