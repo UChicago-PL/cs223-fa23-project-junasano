@@ -8,12 +8,11 @@ import Diagrams.Animation()
 import System.IO ( hFlush, stdout )
 import Control.Monad
 import Data.Maybe ( fromMaybe )
-import Data.Char ( toLower, toUpper, isDigit, isLetter )
+import Data.Char ( toLower, toUpper, isLetter )
 import System.Process ( callCommand )
 import System.Directory
 import Diagrams.Backend.Rasterific (Rasterific, renderRasterific)
 import FractalGenerators
-import Data.String (String)
 
 
 type ZoomRange = ((Double, Double), (Double, Double))
