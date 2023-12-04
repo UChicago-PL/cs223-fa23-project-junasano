@@ -8,7 +8,7 @@ import Diagrams.Animation()
 import System.IO ( hFlush, stdout )
 import Control.Monad
 import Data.Maybe ( fromMaybe )
-import Data.Char ( toLower, toUpper )
+import Data.Char ( toLower, toUpper, isDigit, isLetter )
 import System.Process ( callCommand )
 import System.Directory
 import Diagrams.Backend.Rasterific (Rasterific, renderRasterific)
@@ -77,98 +77,106 @@ capitalize :: String -> String
 capitalize [] = []
 capitalize (h:t) = toUpper h : map toLower t
 
+-- checks to see if string contains all digits
+digit :: String -> Bool
+digit s = all isDigit s
+
+-- checks to see if string contains all letters
+letter :: String -> Bool
+letter s = all isLetter s
+
 -- function to prompt user for still fractal (except for mandelbrot) arguments
 getFractalStill :: String -> (Int -> Int -> Colour Double -> Fractal) -> IO (Fractal, Colour Double)
 getFractalStill fractalName constructor = do
   putStrLn $ "Enter iterations for " ++ capitalize fractalName ++ ":"
-  iter <- readLn
+  iter <- getLine
   putStrLn $ "Enter color (name) for " ++ capitalize fractalName ++ ":"
   colorName <- getLine
-  let col = parseColor colorName
   putStrLn $ "Enter background color (name) for " ++ capitalize fractalName ++ ":"
   bgColorName <- getLine
-  let bgColor = parseColor bgColorName
-
-  return (constructor iter iter col, bgColor)
+  if digit iter && letter colorName && letter bgColorName then do
+    let col = parseColor colorName
+    let bgColor = parseColor bgColorName
+    return (constructor (read iter :: Int) (read iter :: Int) col, bgColor)
+  else do 
+    showInvalidInput
+    getFractalStill fractalName constructor
 
 -- function to prompt user for animation fractal (except for mandelbrot) arguments  
 getFractalAnimate :: String -> (Int -> Int -> Colour Double -> Fractal) -> IO (Fractal, Colour Double)
 getFractalAnimate fractalName constructor = do
   putStrLn $ "Enter minimum iterations for " ++ capitalize fractalName ++ ":"
-  minIter <- readLn
+  minIter <- getLine
   putStrLn $ "Enter maximum iterations for " ++ capitalize fractalName ++ ":"
-  maxIter <- readLn
+  maxIter <- getLine
   putStrLn $ "Enter color (name) for " ++ capitalize fractalName ++ ":"
   colorName <- getLine
-  let col = parseColor colorName
   putStrLn $ "Enter background color (name) for " ++ capitalize fractalName ++ ":"
   bgColorName <- getLine
-  let bgColor = parseColor bgColorName
-  return (constructor minIter maxIter col, bgColor)
+  if digit minIter && digit maxIter && letter colorName && letter bgColorName then do
+    let col = parseColor colorName
+    let bgColor = parseColor bgColorName
+    return (constructor (read minIter :: Int) (read maxIter :: Int) col, bgColor)
+  else do 
+    showInvalidInput
+    getFractalAnimate fractalName constructor
 
 -- function to prompt user for still mandelbrot arguments
 getMandelbrotStill :: IO (Fractal, Colour Double)
 getMandelbrotStill = do
   putStrLn "Enter max iterations (integer):"
-  maxIter <- readLn
-
+  maxIter <- getLine
   putStrLn "Enter cool color (name):"
   coolStr <- getLine
-  let coolC = parseColor coolStr
-
   putStrLn "Enter warm color (name):"
   warmStr <- getLine
-  let warmC = parseColor warmStr
-
   putStrLn "Enter edge size (integer):"
-  edge <- readLn
-
+  edge <- getLine
   putStrLn "Enter X range as (minX, maxX):"
   xRange <- readLn :: IO (Double, Double)
-
   putStrLn "Enter Y range as (minY, maxY):"
   yRange <- readLn :: IO (Double, Double)
-
-  return (Mandelbrot coolC warmC maxIter edge xRange yRange, white)
+  if digit maxIter && digit edge && letter coolStr && letter warmStr then do
+    let warmC = parseColor warmStr
+    let coolC = parseColor coolStr
+    return (Mandelbrot coolC warmC (read maxIter :: Int) (read edge :: Int) xRange yRange, white)
+  else do 
+    showInvalidInput
+    getMandelbrotStill
 
 -- function to prompt user for animation mandelbrot arguments
 getMandelbrotZoom :: IO ([Fractal], Colour Double)
 getMandelbrotZoom = do
   putStrLn "Enter max iterations (integer):"
-  maxIter <- readLn
-
+  maxIter <- getLine
   putStrLn "Enter cool color (name):"
   coolStr <- getLine
-  let coolC = parseColor coolStr
-
   putStrLn "Enter warm color (name):"
   warmStr <- getLine
-  let warmC = parseColor warmStr
-
   putStrLn "Enter edge size (integer):"
-  edge <- readLn
-
+  edge <- getLine
   putStrLn "Enter start X range as (minX, maxX):"
   startXRange <- readLn :: IO (Double, Double)
-
   putStrLn "Enter end X range as (minX, maxX):"
   endXRange <- readLn :: IO (Double, Double)
-
   putStrLn "Enter start Y range as (minY, maxY):"
   startYRange <- readLn :: IO (Double, Double)
-  
   putStrLn "Enter end Y range as (minY, maxY):"
   endYRange <- readLn :: IO (Double, Double)
-  
   putStrLn "Enter number of frames for animation:"
-  numFrames <- readLn
+  numFrames <- getLine
 
-  let xRanges = interpolate numFrames startXRange endXRange
-  let yRanges = interpolate numFrames startYRange endYRange
-  let fractals = [Mandelbrot coolC warmC (maxIter + 50 * i) edge x y | 
-                  ((x, y), i) <- zip (zip xRanges yRanges) [0..]]
-
-  return (fractals, white)
+  if digit maxIter && digit edge && letter coolStr && letter warmStr && digit numFrames then do
+    let coolC = parseColor coolStr
+    let warmC = parseColor warmStr
+    let xRanges = interpolate (read numFrames :: Int) startXRange endXRange
+    let yRanges = interpolate (read numFrames :: Int) startYRange endYRange
+    let fractals = [Mandelbrot coolC warmC (read maxIter :: Int) (read edge :: Int) x y | 
+                    ((x, y), i) <- zip (zip xRanges yRanges) [0..]]
+    return (fractals, white)
+  else do 
+    showInvalidInput
+    getMandelbrotZoom 
 
 -- function to interpolate between two ranges
 interpolate :: Int -> (Double, Double) -> (Double, Double) -> [(Double, Double)]
