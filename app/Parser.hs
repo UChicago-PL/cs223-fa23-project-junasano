@@ -83,14 +83,6 @@ capitalize :: String -> String
 capitalize [] = []
 capitalize (h:t) = toUpper h : map toLower t
 
--- checks to see if string contains all digits
-digit :: String -> Bool
-digit s = all isDigit s
-
--- checks to see if string contains all letters
-letter :: String -> Bool
-letter s = all isLetter s
-
 promptWithDefault :: Read a => String -> a -> IO a
 promptWithDefault message defaultValue = do
     putStr (message ++ "\n> ")
@@ -105,12 +97,7 @@ promptWithDefaultString message defaultValue = do
     putStr (message ++ "\n> ")
     hFlush stdout
     input <- getLine
-    if letter input then return input else return defaultValue
-    --case reads input of
-    --    [(value, "")] -> return value
-    --    _ -> return defaultValue
-    --return $ if null input then defaultValue else input
-
+    if all isLetter input then return input else return defaultValue
 
 -- function to prompt user for still fractal (except for mandelbrot) arguments
 getFractalStill :: String -> (Int -> Int -> Colour Double -> Fractal) -> IO (Fractal, Colour Double)
