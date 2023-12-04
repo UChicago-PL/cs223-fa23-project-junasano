@@ -1,24 +1,19 @@
 module Parser where
 
-import Diagrams.Prelude hiding (image,Angle, value)
-import Diagrams.Backend.SVG.CmdLine (mainWith, B )
+import Diagrams.Prelude hiding ( image,Angle, value, frame )
 import Diagrams.TwoD()
-import Text.Read (readMaybe)
-import Data.Colour( Colour )
-{-# LANGUAGE NoMonomorphismRestriction #-}
+{-# LANGUAGE NoMonomorphismRestriction #-} 
 {-# LANGUAGE TypeFamilies #-}
-import Options.Applicative
-import Data.Complex ( magnitude, Complex((:+)) )
-import Diagrams.Backend.SVG (renderSVG)
 import Diagrams.Animation()
-import System.IO ( hFlush, hSetBuffering, stdin, stdout, BufferMode(LineBuffering)  )
+import System.IO ( hFlush, stdout )
 import Control.Monad
-import Data.Maybe (fromMaybe)
-import Data.Char (toLower, toUpper)
-import FractalGenerators
-import System.Process (callCommand)
+import Data.Maybe ( fromMaybe )
+import Data.Char ( toLower, toUpper )
+import System.Process ( callCommand )
 import System.Directory
 import Diagrams.Backend.Rasterific (Rasterific, renderRasterific)
+import FractalGenerators
+
 
 type ZoomRange = ((Double, Double), (Double, Double))
 
@@ -52,7 +47,8 @@ promptOutputType = do
       if outputType `elem` ["still", "animation"]
         then return outputType
         else do
-          putStrLn "Invalid input. Please enter 'still' or 'animation'."
+          putStr "\ESC[2J"
+          putStrLn "Invalid output type. Please enter 'still' or 'animation'."
           outputTypeLoop
 
 

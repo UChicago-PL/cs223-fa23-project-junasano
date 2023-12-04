@@ -2,7 +2,6 @@ module Main where
 
 import System.IO ( hFlush, hSetBuffering, stdin, stdout, BufferMode(LineBuffering)  )
 import Parser
-import FractalGenerators
 
 
 main :: IO ()

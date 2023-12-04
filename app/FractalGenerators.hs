@@ -1,21 +1,12 @@
 module FractalGenerators where
-  
-import Diagrams.Prelude hiding (image,Angle, value)
-import Diagrams.Backend.SVG.CmdLine (mainWith, B )
-import Diagrams.TwoD()
-import Text.Read (readMaybe)
-import Data.Colour( Colour )
+
+import Diagrams.Prelude hiding ( image,Angle, value )
+import Diagrams.TwoD ()
 {-# LANGUAGE NoMonomorphismRestriction #-}
 {-# LANGUAGE TypeFamilies #-}
-import Options.Applicative
 import Data.Complex ( magnitude, Complex((:+)) )
-import Diagrams.Backend.SVG (renderSVG)
-import Diagrams.Animation()
-import System.IO ( hFlush, hSetBuffering, stdin, stdout, BufferMode(LineBuffering)  )
-import Control.Monad
-import Data.Maybe (fromMaybe)
-import Data.Char (toLower)
-import Diagrams.Backend.Rasterific (Rasterific, renderRasterific)
+import Diagrams.Animation ()
+import Diagrams.Backend.Rasterific ( Rasterific )
 
 
 -- For parsing we create a fractal datatype which includes the args
@@ -41,7 +32,7 @@ sierpinski :: Int -> Colour Double -> Diagram Rasterific
 sierpinski 0 c = triangleShape # fc c
 sierpinski n c = s
              ===
-             (s ||| s)  # centerX
+             (s ||| s)  # centerX 
   where s = sierpinski (n-1) c # scale (1/2) # fc c
 
 
