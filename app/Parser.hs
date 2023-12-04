@@ -20,6 +20,8 @@ import System.Process (callCommand)
 import System.Directory
 import Diagrams.Backend.Rasterific (Rasterific, renderRasterific)
 
+type ZoomRange = ((Double, Double), (Double, Double))
+
 
 getFractalType :: IO String 
 getFractalType = do
@@ -61,29 +63,34 @@ capitalize :: String -> String
 capitalize [] = []
 capitalize (h:t) = toUpper h : map toLower t
 
-getFractalStill :: String -> (Int -> Int -> Colour Double -> Fractal) -> IO Fractal
+getFractalStill :: String -> (Int -> Int -> Colour Double -> Fractal) -> IO (Fractal, Colour Double)
 getFractalStill fractalName constructor = do
   putStrLn $ "Enter iterations for " ++ capitalize fractalName ++ ":"
   iter <- readLn
   putStrLn $ "Enter color (name) for " ++ capitalize fractalName ++ ":"
-  col <- readLn
-  return $ constructor iter iter col
+  colorName <- getLine
+  let col = parseColor colorName
+  putStrLn $ "Enter background color (name) for " ++ capitalize fractalName ++ ":"
+  bgColorName <- getLine
+  let bgColor = parseColor bgColorName
 
-getFractalAnimate :: String -> (Int -> Int -> Colour Double -> Fractal) -> IO Fractal
+  return (constructor iter iter col, bgColor)
+
+getFractalAnimate :: String -> (Int -> Int -> Colour Double -> Fractal) -> IO (Fractal, Colour Double)
 getFractalAnimate fractalName constructor = do
   putStrLn $ "Enter minimum iterations for " ++ capitalize fractalName ++ ":"
   minIter <- readLn
   putStrLn $ "Enter maximum iterations for " ++ capitalize fractalName ++ ":"
   maxIter <- readLn
   putStrLn $ "Enter color (name) for " ++ capitalize fractalName ++ ":"
-  constructor minIter <$> pure maxIter <*> readLn
+  colorName <- getLine
+  let col = parseColor colorName
+  putStrLn $ "Enter background color (name) for " ++ capitalize fractalName ++ ":"
+  bgColorName <- getLine
+  let bgColor = parseColor bgColorName
+  return (constructor minIter maxIter col, bgColor)
 
-invalidOutputType :: String -> IO Fractal
-invalidOutputType fractalType = do
-  outputType <- promptOutputType
-  promptFractalArgs fractalType outputType
-
-getMandelbrotStill :: IO Fractal
+getMandelbrotStill :: IO (Fractal, Colour Double)
 getMandelbrotStill = do
   putStrLn "Enter max iterations (integer):"
   maxIter <- readLn
@@ -105,47 +112,112 @@ getMandelbrotStill = do
   putStrLn "Enter Y range as (minY, maxY):"
   yRange <- readLn :: IO (Double, Double)
 
-  return $ Mandelbrot coolC warmC maxIter edge xRange yRange
+  return (Mandelbrot coolC warmC maxIter edge xRange yRange, white)
+
+getMandelbrotZoom :: IO ([Fractal], Colour Double)
+getMandelbrotZoom = do
+  putStrLn "Enter max iterations (integer):"
+  maxIter <- readLn
+
+  putStrLn "Enter cool color (name):"
+  coolStr <- getLine
+  let coolC = parseColor coolStr
+
+  putStrLn "Enter warm color (name):"
+  warmStr <- getLine
+  let warmC = parseColor warmStr
+
+  putStrLn "Enter edge size (integer):"
+  edge <- readLn
+
+  putStrLn "Enter start X range as (minX, maxX):"
+  startXRange <- readLn :: IO (Double, Double)
+
+  putStrLn "Enter end X range as (minX, maxX):"
+  endXRange <- readLn :: IO (Double, Double)
+
+  putStrLn "Enter start Y range as (minY, maxY):"
+  startYRange <- readLn :: IO (Double, Double)
+  
+  putStrLn "Enter end Y range as (minY, maxY):"
+  endYRange <- readLn :: IO (Double, Double)
+  
+  putStrLn "Enter number of frames for animation:"
+  numFrames <- readLn
+
+  let xRanges = interpolate numFrames startXRange endXRange
+  let yRanges = interpolate numFrames startYRange endYRange
+  let fractals = [Mandelbrot coolC warmC (maxIter + 50 * i) edge x y | 
+                  ((x, y), i) <- zip (zip xRanges yRanges) [0..]]
+
+  return (fractals, white)
+
+interpolate :: Int -> (Double, Double) -> (Double, Double) -> [(Double, Double)]
+interpolate numFrames (startMin, startMax) (endMin, endMax) = 
+  [(startMin + (endMin - startMin) * progress, 
+     startMax + (endMax - startMax) * progress) 
+    | frame <- [0..numFrames - 1], 
+      let progress = fromIntegral frame / fromIntegral (numFrames - 1)]
+
 
         
-promptFractalArgs :: String -> String -> IO Fractal
+promptFractalArgs :: String -> String -> IO (Fractal, Colour Double)
 promptFractalArgs fractalType outputType = do
   case capitalize fractalType of
     "Snowflake" -> handleOutputType Snowflake
     "Dragon" -> handleOutputType Dragon
     "Sierpinski" -> handleOutputType Sierpinski
     "Tree" -> handleOutputType Tree
-    "Mandelbrot" -> getMandelbrotStill
     _ -> error "Unsupported fractal type"
     where
     handleOutputType constructor = case outputType of
         "still" -> getFractalStill fractalType constructor
         "animation" -> getFractalAnimate fractalType constructor
         _ -> error "Invalid output type" 
+    
+
+  
 
 
-generateFrames :: (Int -> Colour Double -> Diagram Rasterific) -> Int -> Int -> Colour Double -> FilePath -> IO [FilePath]
-generateFrames constructor minIter maxIter tempDir c = forM [minIter..maxIter] $ \iter -> do
-    let diagram = constructor iter c
+generateFrames :: Colour Double -> (Int -> Colour Double -> Diagram Rasterific) -> Int -> Int -> Colour Double -> FilePath -> IO [FilePath]
+generateFrames bgC constructor minIter maxIter c tempDir = forM [minIter..maxIter] $ \iter -> do
+    let diagram = constructor iter c # bg bgC
     let fileName = tempDir ++ "/frame_" ++ show iter ++ ".png"
     renderRasterific fileName (dims $ V2 400 400) diagram
     return fileName
 
-renderAnimation :: Fractal -> IO ()
-renderAnimation fractal = do
+generateMandelbrotFrames :: Colour Double -> [Fractal] -> FilePath -> IO [FilePath]
+generateMandelbrotFrames bgC fractals tempDir = forM (zip [0..] fractals) $ \(index, fractal) -> do
+    let diagram = renderFractal fractal # bg bgC
+    let fileName = tempDir ++ "/frame_" ++ show index ++ ".png"
+    renderRasterific fileName (dims $ V2 400 400) diagram
+    return fileName
+
+renderAnimation :: Colour Double -> Fractal -> IO ()
+renderAnimation bgC fractal = do
     let tempDir = "temp_frames"
     createDirectoryIfMissing True tempDir
 
     fileNames <- case fractal of
-        Snowflake minIter maxIter c -> generateFrames snowflake minIter maxIter c tempDir
-        Sierpinski minIter maxIter c -> generateFrames sierpinski minIter maxIter c tempDir
-        Dragon minIter maxIter c -> generateFrames dragonCurve minIter maxIter c tempDir
-        Tree minIter maxIter c -> generateFrames pythagorasTree minIter maxIter c tempDir
+        Snowflake minIter maxIter c -> generateFrames bgC snowflake minIter maxIter c tempDir
+        Sierpinski minIter maxIter c -> generateFrames bgC sierpinski minIter maxIter c tempDir
+        Dragon minIter maxIter c -> generateFrames bgC dragonCurve minIter maxIter c tempDir
+        Tree minIter maxIter c -> generateFrames bgC pythagorasTree minIter maxIter c tempDir
         _ -> error "Unsupported fractal for animation"
 
     createGif fileNames
     cleanupFiles fileNames
     removeDirectoryRecursive tempDir
+
+renderMandelbrotAnimation :: Colour Double -> [Fractal] -> IO ()
+renderMandelbrotAnimation bgC fractals = do
+    let tempDir = "temp_frames"
+    createDirectoryIfMissing True tempDir
+    fileNames <- generateMandelbrotFrames bgC fractals tempDir
+    createGif fileNames
+    cleanupFiles fileNames
+    removeDirectoryRecursive tempDir
+
 
 createGif :: [FilePath] -> IO ()
 createGif fileNames = do
@@ -156,9 +228,9 @@ createGif fileNames = do
 cleanupFiles :: [FilePath] -> IO ()
 cleanupFiles = mapM_ removeFile
 
-renderStill :: Fractal -> IO ()
-renderStill fractalType = do
-    let diagram = renderFractal fractalType
+renderStill :: Colour Double -> Fractal -> IO ()
+renderStill bgCol fractalType = do
+    let diagram = renderFractal fractalType # bg bgCol
     let fileName = "output.png"
     renderRasterific fileName (dims $ V2 400 400) diagram
 

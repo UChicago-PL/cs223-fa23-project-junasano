@@ -12,9 +12,12 @@ main = do
     hFlush stdout
     fractalType <- promptFractalTypeLoop
     outputType <- promptOutputType
-
-    fractal <- promptFractalArgs fractalType outputType
-    case outputType of
-        "still" -> renderStill fractal
-        "animation" -> renderAnimation fractal
-        _ -> putStrLn outputType
+    if fractalType == "mandelbrot" && outputType == "animation" then do
+        (fractals, bgC) <- getMandelbrotZoom
+        renderMandelbrotAnimation bgC fractals
+    else do
+        (fractal, bgC) <- promptFractalArgs fractalType outputType
+        case outputType of
+            "still" -> renderStill bgC fractal
+            "animation" -> renderAnimation bgC fractal
+            _ -> putStrLn outputType
