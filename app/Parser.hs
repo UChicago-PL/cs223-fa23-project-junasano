@@ -93,14 +93,14 @@ capitalize :: String -> String
 capitalize [] = []
 capitalize (h:t) = toUpper h : map toLower t
 
-promptWithDefault :: (Read a, Num a) => String -> a -> IO a
-promptWithDefault message defaultValue = do
+promptWithDefault :: (Read a, Num a) => String -> Int -> Int -> a -> IO a
+promptWithDefault message s e defaultValue = do
     putStr (message ++ "\n> ")
     hFlush stdout
     input <- getLine
     case capitalize input of 
       "Random" -> do
-        randomNum <- randomRIO (2, 10) :: IO Int
+        randomNum <- randomRIO (s, e) :: IO Int
         return $ fromIntegral randomNum
       _ -> case reads input of
               [(value, "")] -> return value 
@@ -132,7 +132,7 @@ promptWithDefaultString message defaultValue = do
 -- function to prompt user for still fractal (except for mandelbrot) arguments
 getFractalStill :: String -> (Int -> Int -> Colour Double -> Fractal) -> IO (Fractal, Colour Double)
 getFractalStill fractalName constructor = do
-  iter <- promptWithDefault ("Enter iterations for " ++ capitalize fractalName ++ " (default: 5)") (5 :: Int)
+  iter <- promptWithDefault ("Enter iterations for " ++ capitalize fractalName ++ " (default: 5)") 2 10 (5 :: Int)
   colorName <- promptWithDefaultString ("Enter color (name) for " ++ capitalize fractalName ++ " (default: blue)") "blue"
   bgColorName <- promptWithDefaultString ("Enter background color (name) for " ++ capitalize fractalName ++ " (default: red)") "red"
 
@@ -143,8 +143,8 @@ getFractalStill fractalName constructor = do
 -- function to prompt user for animation fractal (except for mandelbrot) arguments  
 getFractalAnimate :: String -> (Int -> Int -> Colour Double -> Fractal) -> IO (Fractal, Colour Double)
 getFractalAnimate fractalName constructor = do
-  minIter <- promptWithDefault ("Enter start iteration for " ++ capitalize fractalName ++ " (default: 1)") (1 :: Int)
-  maxIter <- promptWithDefault ("Enter end iteration for " ++ capitalize fractalName ++ " (default: 6)") (6 :: Int)
+  minIter <- promptWithDefault ("Enter start iteration for " ++ capitalize fractalName ++ " (default: 1)") 2 5(1 :: Int)
+  maxIter <- promptWithDefault ("Enter end iteration for " ++ capitalize fractalName ++ " (default: 6)") 6 10 (6 :: Int)
   colorName <- promptWithDefaultString ("Enter color (name) for " ++ capitalize fractalName ++ " (default: blue)") "blue"
   bgColorName <- promptWithDefaultString ("Enter background color (name) for " ++ capitalize fractalName ++ " (default: red)") "red"
 
@@ -156,10 +156,10 @@ getFractalAnimate fractalName constructor = do
 -- function to prompt user for still mandelbrot arguments
 getMandelbrotStill :: IO (Fractal, Colour Double)
 getMandelbrotStill = do
-  maxIter <- promptWithDefault "Enter number of iterations for Mandelbrot (int) (default: 100)" (100 :: Int)
+  maxIter <- promptWithDefault "Enter number of iterations for Mandelbrot (int) (default: 100)" 90 110 (100 :: Int)
   coolStr <- promptWithDefaultString "Enter cool color (name) (default: blue)" "blue"
   warmStr <- promptWithDefaultString "Enter warm color (name) (default: red)" "red"
-  edge <- promptWithDefault "Enter number of pixels per edge (int) (default: 100)" (100 :: Int)
+  edge <- promptWithDefault "Enter number of pixels per edge (int) (default: 100)" 90 110 (100 :: Int)
   xRange <- promptWithDefaultTuple "Enter X range as (minX, maxX) (default: (-2, 1))" (-2 :: Double, 1 :: Double)
   yRange <- promptWithDefaultTuple "Enter y range as (minY, maxY) (default: (-1.5, 1.5))" (-1.5 :: Double, 1.5 :: Double)
   
@@ -171,15 +171,15 @@ getMandelbrotStill = do
 -- function to prompt user for animation mandelbrot arguments
 getMandelbrotZoom :: IO ([Fractal], Colour Double)
 getMandelbrotZoom = do
-  maxIter <- promptWithDefault "Enter start number of iterations for Mandelbrot (int) (default: 100)" (100 :: Int)
+  maxIter <- promptWithDefault "Enter start number of iterations for Mandelbrot (int) (default: 100)" 90 110 (100 :: Int)
   coolStr <- promptWithDefaultString "Enter cool color (name) (default: blue)" "blue"
   warmStr <- promptWithDefaultString "Enter warm color (name) (default: red)" "red"
-  edge <- promptWithDefault "Enter number of pixels per edge (int) (default: 100)" (100 :: Int)
+  edge <- promptWithDefault "Enter number of pixels per edge (int) (default: 100)" 90 110 (100 :: Int)
   startXRange <- promptWithDefaultTuple "Enter start X range as (minX, maxX) (default: (-2, 1))" (-2 :: Double, 1 :: Double)
   endXRange <- promptWithDefaultTuple "Enter end X range as (minX, maxX) (default: (-0.751, -0.749))" (-0.751 :: Double, -0.749 :: Double)
   startYRange <- promptWithDefaultTuple "Enter start y range as (minY, maxY) (default: (-1.5, 1.5))" (-1.5 :: Double, 1.5 :: Double)
   endYRange <- promptWithDefaultTuple "Enter end y range as (minY, maxY) (default: (0.099, 0.101))" (0.099 :: Double, 0.101 :: Double)
-  numFrames <- promptWithDefault "Enter total number of frames (default 10)" (10 :: Int)
+  numFrames <- promptWithDefault "Enter total number of frames (default 10)" 9 11 (10 :: Int)
 
   let coolC = parseColor coolStr blue
   let warmC = parseColor warmStr red
