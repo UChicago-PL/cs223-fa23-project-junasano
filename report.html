@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Final Report</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f4f4f4;
+        }
+        .header {
+            background-color: #333;
+            color: white;
+            text-align: center;
+            padding: 10px 0;
+        }
+        .container {
+            padding: 20px;
+        }
+        .gif-container {
+            display: flex; /* This enables flexbox */
+            justify-content: space-around; /* This spreads the images evenly */
+            align-items: center; /* This centers the images vertically */
+            flex-wrap: wrap; /* This allows items to wrap onto the next line */
+        }
+        .gif {
+            margin: 15px;
+            flex-basis: calc(33% - 30px); /* Adjust the width and margin of the GIFs */
+        }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <h1>Final Project Report: Jayden Francis and Jun Asano</h1>
+    </div>
+
+    <div class="container">
+        <h2>Overview</h2>
+        <p>We created a fractal generator in Haskell that supports PNG and animated GIF representations of 5 different types of fractals: 
+            The Sierpinski Triangle, the Koch Snowflake, the Heighway Dragon, the Pythagorean Tree, and the Mandelbrot set. Our generator uses
+            the Diagrams library to create the fractal images, and we convert these images into GIFs with ImageMagick (this is done automatically, but
+    you     must have ImageMagick installed on your machine for it to work). Our fractal generator has a command line interface that will prompt the user
+    for     the relevant arguments needed to create the fractals, along with the output type (still or animated). Each argument comes with a default value
+    that    will be used if the user chooses not to enter a custom one.</p>
+        
+        <h2>Code Organization</h2>
+        <p>We split our project into 3 files: FractalGenerator.hs, Parser.hs, and Main.hs, which you can find in the app directory of our project</p>
+        <h3>FractalGenerator.hs</h3>
+        <p>This file contains all the functions that are involved in the creation of the fractals. We define a custom Fractal datatype which contains the relevant arguments to 
+            help aid with this. We use the Rasterific backend to create our diagrams, so every final fractal is of type Diagram Rasterific, which we then render in Parser.hs. 
+            Every fractal but Mandelbrot is created recursively, using the concepts we developed from analyzing the Diagrams Library documentation to create diagrams in relative
+            vector space and using the '<>' operator to concatinate them. The Mandelbrot diagram is a bit more complicated, and functions by creating a grid of imaginary numbers,
+            and determining whether or not each pixel in that grid diverges when applied to a quadratic polynomial function that is iterated a set number of times.
+        </p>
+        <h3>Parser.hs</h3>
+        <p>This file contains all of the logic for running our command line user interface, along with the specifics on how to render a fractal as an image or GIF
+            after all the arguments have been passed in by the user. This interface was inspired by our Wordle project and provides an elegan way for the user to control
+            the specifics of the fractal generation. There is also a help option supported which allows the user to get more information about which fractals are supported
+        </p>
+        <h3>Main.hs</h3>
+        <p>This main functions threads our parsing and rendering functions together to complete the user experience. You will notice that the Mandelbrot fractal is handled seperately from 
+            all of the others, this is because it requires significantly different arguments, and the way we aniimate it is also different from just increasing the number of iterations, as such
+            we have different functions to handle its parsing and generation.
+        </p>
+        <h2>How to run our project</h2>
+        <p>Simply run 'cabal run' in the project directory and respond the the prompts, if you generate a still image it will appear as output.png,
+            and if you generate an animation it will appear as animation.gif.
+        </p>
+
+        <h2>Some example outputs</h2>
+        <p>We have included some examples outputs of what you can expect to create with our project</p>
+        <div class="gif-container">
+        
+            <img class="gif" src="snowflake.png" alt="A 6 iteration snowflake">
+            <img class="gif" src="triangle.gif" alt="A 7 iteration Sierpinski">
+            <img class="gif" src="dragon.png" alt="A 14 iteration Dragon">
+            <img class="gif" src="tree.gif" alt="A 9 iteration Tree">  
+            <img class="gif" src="mandelbrot.gif" alt="A Mandelbrot zoom with default range"> 
+
+    </div>
+
+
+       
+    </div>
+
+</body>
+</html>
