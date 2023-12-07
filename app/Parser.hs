@@ -12,6 +12,7 @@ import Data.Char ( toLower, toUpper, isLetter )
 import System.Process ( callCommand )
 import System.Directory
 import Diagrams.Backend.Rasterific (Rasterific, renderRasterific)
+import System.Random ( randomRIO )
 import FractalGenerators
 
 
@@ -29,7 +30,7 @@ getFractalType = do
 showHelp :: IO ()
 showHelp = do
   putStr "\ESC[2J"
-  putStrLn "Available fractals: Snowflake, Sierpinski, Dragon, Tree, Mandelbrot"
+  putStrLn "Available fractals: Snowflake, Sierpinski, Dragon, Tree, Mandelbrot, Random"
 
 -- function to show invalid input when user types an invalid fractal
 showInvalidInput :: IO ()
@@ -45,16 +46,21 @@ promptOutputType = do
   where
     outputTypeLoop :: IO String
     outputTypeLoop = do
-      putStr "Choose output type (still or animation):"
+      putStr "Choose output type (still, animation, or random):"
       enterString
       hFlush stdout
       outputType <- getLine
-      if capitalize outputType `elem` ["Still", "Animation"]
-        then return outputType
-        else do
-          putStr "\ESC[2J"
-          putStrLn "Invalid output type. Please enter 'still' or 'animation'."
-          outputTypeLoop
+      if capitalize outputType `elem` ["Still", "Animation", "Random"] then
+        if capitalize outputType == "Random" then do
+          randomNum <- randomRIO (0, 1) :: IO Int
+          let out = ["still", "animation"] !! randomNum
+          return out
+        else
+          return outputType
+      else do
+        putStr "\ESC[2J" 
+        putStrLn "Invalid output type. Please enter 'still' or 'animation'."
+        outputTypeLoop
 
 -- function to prompt user for fractal type. Only accepts valid fractal types
 promptFractalTypeLoop :: IO String
@@ -64,8 +70,13 @@ promptFractalTypeLoop = do
     if fractalTypeLower == "help" then do
         showHelp
         promptFractalTypeLoop
-    else if fractalTypeLower `elem` ["snowflake", "dragon", "sierpinski", "tree", "mandelbrot"] then
-        return fractalType
+    else if fractalTypeLower `elem` ["snowflake", "dragon", "sierpinski", "tree", "mandelbrot", "random"] then
+        if fractalTypeLower == "random" then do
+          randomNum <- randomRIO (0, 4) :: IO Int
+          let frac = ["snowflake", "dragon", "sierpinski", "tree", "mandelbrot"] !! randomNum
+          return frac
+        else
+          return fractalType
     else do
         showInvalidInput
         promptFractalTypeLoop
@@ -82,21 +93,41 @@ capitalize :: String -> String
 capitalize [] = []
 capitalize (h:t) = toUpper h : map toLower t
 
-promptWithDefault :: Read a => String -> a -> IO a
+promptWithDefault :: (Read a, Num a) => String -> a -> IO a
 promptWithDefault message defaultValue = do
     putStr (message ++ "\n> ")
     hFlush stdout
     input <- getLine
+    case capitalize input of 
+      "Random" -> do
+        randomNum <- randomRIO (2, 10) :: IO Int
+        return $ fromIntegral randomNum
+      _ -> case reads input of
+              [(value, "")] -> return value 
+              _ -> return defaultValue
+
+promptWithDefaultTuple :: (Read a, Read b) => String -> (a, b) -> IO (a, b)
+promptWithDefaultTuple message defaultValue = do
+    putStr (message ++ "\n> ")
+    hFlush stdout
+    input <- getLine
     case reads input of
-        [(value, "")] -> return value 
-        _ -> return defaultValue
+        [(value, "")] -> return value
+        _             -> return defaultValue
        
 promptWithDefaultString :: String -> String -> IO String
 promptWithDefaultString message defaultValue = do
     putStr (message ++ "\n> ")
     hFlush stdout
     input <- getLine
-    if all isLetter input then return input else return defaultValue
+    case capitalize input of
+      "Random" -> do
+        rawwords <- readFile "colors.txt"
+        let wordlist = lines rawwords
+        index <- randomRIO (0, length wordlist) :: IO Int
+        let out = wordlist !! index
+        return out
+      _ -> do if all isLetter input then return input else return defaultValue
 
 -- function to prompt user for still fractal (except for mandelbrot) arguments
 getFractalStill :: String -> (Int -> Int -> Colour Double -> Fractal) -> IO (Fractal, Colour Double)
@@ -125,12 +156,12 @@ getFractalAnimate fractalName constructor = do
 -- function to prompt user for still mandelbrot arguments
 getMandelbrotStill :: IO (Fractal, Colour Double)
 getMandelbrotStill = do
-  maxIter <- promptWithDefault "Enter number of iterations (int) (default: 100)" (100 :: Int)
+  maxIter <- promptWithDefault "Enter number of iterations for Mandelbrot (int) (default: 100)" (100 :: Int)
   coolStr <- promptWithDefaultString "Enter cool color (name) (default: blue)" "blue"
   warmStr <- promptWithDefaultString "Enter warm color (name) (default: red)" "red"
   edge <- promptWithDefault "Enter number of pixels per edge (int) (default: 100)" (100 :: Int)
-  xRange <- promptWithDefault "Enter X range as (minX, maxX) (default: (-2, 1))" (-2 :: Double, 1 :: Double)
-  yRange <- promptWithDefault "Enter y range as (minY, maxY) (default: (-1.5, 1.5))" (-1.5 :: Double, 1.5 :: Double)
+  xRange <- promptWithDefaultTuple "Enter X range as (minX, maxX) (default: (-2, 1))" (-2 :: Double, 1 :: Double)
+  yRange <- promptWithDefaultTuple "Enter y range as (minY, maxY) (default: (-1.5, 1.5))" (-1.5 :: Double, 1.5 :: Double)
   
   let warmC = parseColor warmStr blue
   let coolC = parseColor coolStr red
@@ -140,14 +171,14 @@ getMandelbrotStill = do
 -- function to prompt user for animation mandelbrot arguments
 getMandelbrotZoom :: IO ([Fractal], Colour Double)
 getMandelbrotZoom = do
-  maxIter <- promptWithDefault "Enter start number of iterations (int) (default: 100)" (100 :: Int)
+  maxIter <- promptWithDefault "Enter start number of iterations for Mandelbrot (int) (default: 100)" (100 :: Int)
   coolStr <- promptWithDefaultString "Enter cool color (name) (default: blue)" "blue"
   warmStr <- promptWithDefaultString "Enter warm color (name) (default: red)" "red"
   edge <- promptWithDefault "Enter number of pixels per edge (int) (default: 100)" (100 :: Int)
-  startXRange <- promptWithDefault "Enter start X range as (minX, maxX) (default: (-2, 1))" (-2 :: Double, 1 :: Double)
-  endXRange <- promptWithDefault "Enter end X range as (minX, maxX) (default: (-0.751, -0.749))" (-0.751 :: Double, -0.749 :: Double)
-  startYRange <- promptWithDefault "Enter start y range as (minY, maxY) (default: (-1.5, 1.5))" (-1.5 :: Double, 1.5 :: Double)
-  endYRange <- promptWithDefault "Enter end y range as (minY, maxY) (default: (0.099, 0.101))" (0.099 :: Double, 0.101 :: Double)
+  startXRange <- promptWithDefaultTuple "Enter start X range as (minX, maxX) (default: (-2, 1))" (-2 :: Double, 1 :: Double)
+  endXRange <- promptWithDefaultTuple "Enter end X range as (minX, maxX) (default: (-0.751, -0.749))" (-0.751 :: Double, -0.749 :: Double)
+  startYRange <- promptWithDefaultTuple "Enter start y range as (minY, maxY) (default: (-1.5, 1.5))" (-1.5 :: Double, 1.5 :: Double)
+  endYRange <- promptWithDefaultTuple "Enter end y range as (minY, maxY) (default: (0.099, 0.101))" (0.099 :: Double, 0.101 :: Double)
   numFrames <- promptWithDefault "Enter total number of frames (default 10)" (10 :: Int)
 
   let coolC = parseColor coolStr blue
