@@ -1,10 +1,3 @@
 ===== Project Feedback =====
-member: jasano
-member: jayden
+===== Project Feedback =====
 
-Loren's Feedback:
-Awesome project. I've always wanted to write something to visualize fractals - and especially in Haskell, there are probably great ways of using laziness to get arbitrarily high detail without having to do too much work about what depth to terminate computation at.
-Bhakti's Feedback:
-I really love the idea, but it seems like the tutorial you linked in your proposal covers at least your easy and medium goals; it's great that this information exists but i would maybe add at least one goal that does *more* than what the tutorial explicitly writes out for you.
-
-Score: 3/3
