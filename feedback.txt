@@ -1,3 +1,2 @@
 ===== Project Feedback =====
-===== Project Feedback =====
-
+It looks like you implemented all of the features you mentioned in your proposal. Nice job splitting your program into separate modules with separate concerns. Your presentation gave some awesome demos! Great work!
